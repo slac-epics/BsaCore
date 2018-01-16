@@ -1,0 +1,4 @@
+EPICS_SITE_TOP=/home/till/epics
+BASE_MODULE_VERSION=base-3.15.5
+TIMING_API=/home/till/lcls/timingApi
+
