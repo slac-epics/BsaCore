@@ -11,6 +11,7 @@ LIBRARY_IOC += BsaCore
 
 # Compile and add the code to the support library
 BsaCore_SRCS += BsaComp.cc
+BsaCore_SRCS += PatternBuffer.cc
 
 #BsaCore_LIBS += $(EPICS_BASE_IOC_LIBS)
 

@@ -1,4 +1,5 @@
 #ifndef BSA_RING_BUFFER_H
+#define BSA_RING_BUFFER_H
 
 #include <cstddef>
 #include <vector>
@@ -7,7 +8,7 @@
 
 // Ring-buffer WITHOUT range checking!
 // Size is a power of 2.
-template <typename T, unsigned ldSz>
+template <typename T>
 class RingBuffer {
 private:
 	std::vector<T> buf_;
@@ -22,7 +23,7 @@ public:
 	typedef const T &const_reference;
 	typedef size_t   size_type;
 
-	RingBuffer()
+	RingBuffer(unsigned ldSz)
 	: h_(0),
 	  t_(0),
 	  m_((1<<ldSz)-1)
