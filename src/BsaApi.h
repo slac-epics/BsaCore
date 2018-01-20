@@ -73,6 +73,9 @@ extern "C" {
 
 typedef uint64_t BsaPulseId;
 
+typedef uint16_t BsaSevr;
+typedef  int16_t BsaStat;
+
 /*
  * Return max number of BSA channels supported
  * by the timing system.
@@ -85,7 +88,7 @@ bsaGetNumChannels();
 /*
  * Opaque BSA channel object (specific to one variable)
  */
-typedef struct BsaChannelStruct *BsaChannel;
+typedef struct BsaChannelImpl *BsaChannel;
 
 /*
  * Create or obtain a BsaChannel; if the same name is used for
@@ -142,8 +145,8 @@ BSA_StoreData(
 	BsaChannel     bsaChannel,
     epicsTimeStamp timeStamp,
 	double         value,
-	int            status,
-	int            severity
+	BsaStat        status,
+	BsaSevr        severity
 );
 
 /*
@@ -178,8 +181,8 @@ struct BsaResultStruct {
 	int            missed; // # of pulses with active EDEF but no data was received
 	epicsTimeStamp timeStamp;
 	BsaPulseId     pulseId;
-	int            stat;
-	int            sevr;
+	BsaStat        stat;
+	BsaSevr        sevr;
 };
 
 typedef const struct BsaResultStruct *BsaResult;

@@ -4,17 +4,42 @@
 #include <bsaCallbackApi.h>
 #include <BsaTimeStamp.h>
 #include <mutex>
-#include <RingBuffer.h>
+#include <memory>
+#include <atomic>
+#include <RingBufferSync.h>
+
+typedef uint16_t PatternIdx;
+
+typedef signed char BsaEdef;
+
+#define NUM_EDEF_MAX 64
 
 typedef struct BsaPattern : public BsaTimingData {
 private:
-	int refCount_;
+	std::atomic<int> refCount_;
+	PatternIdx       seqIdx_[NUM_EDEF_MAX];
 public:
 	BsaPattern(const BsaTimingData *p)
 	: BsaTimingData( *p ),
 	  refCount_    (  0 )
 	{
 	}
+
+	BsaPattern()
+	: refCount_( 0 )
+	{
+	}
+
+	BsaPattern(const BsaPattern &orig)
+	: BsaTimingData( orig         ),
+	  refCount_    ( 0            )
+	{
+		for ( unsigned i = 0; i < NUM_EDEF_MAX; i++ )
+			seqIdx_[i] = orig.seqIdx_[i];
+	}
+
+	BsaPattern &operator=(const BsaTimingData*);
+
 	void incRef()
 	{
 		refCount_++;
@@ -28,27 +53,40 @@ public:
 	{
 		return refCount_;
 	}
+
+	friend class PatternBuffer;
 } BsaPattern;
 
 class PatternExpired  {};
 class PatternTooNew   {};
 class PatternNotFound {};
 
-class PatternBuffer : public RingBuffer<BsaPattern> {
+class PatternBuffer : public RingBufferSync<BsaPattern, const BsaTimingData*> {
 private:
 	PatternBuffer(const PatternBuffer &);
 	PatternBuffer & operator=(const PatternBuffer&);
 
-	std::mutex mtx_;
+	typedef std::unique_ptr< RingBuffer<PatternIdx> > IndexBufPtr;
 
-	typedef std::unique_lock<std::mutex> Lock;
+	std::vector<IndexBufPtr> indexBufs_;
 
-	bool pop();
+protected:
+	virtual bool checkMinFilled();
+
+	virtual void finalizePush();
 
 public:
-	PatternBuffer(unsigned ldSz);
+	PatternBuffer(unsigned ldSz, unsigned minfill);
 
 	virtual BsaPattern *patternGet(BsaTimeStamp ts);
+
+	virtual BsaPattern *patternGet(BsaPattern *);
+
+	virtual BsaPattern *patternGetOldest(BsaEdef edef);
+
+	virtual BsaPattern *patternGetNext(BsaPattern *pat, BsaEdef edef);
+
+	virtual BsaPattern *patternGetPrev(BsaPattern *pat, BsaEdef edef);
 
 	virtual void patternPut(BsaPattern *pattern);
 

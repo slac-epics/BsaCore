@@ -10,15 +10,34 @@ BsaComp::~BsaComp()
 }
 
 void
-BsaComp::reset(BsaTimeStamp initTime)
+BsaComp::resetAvg()
 {
-	initTs_           = initTime;	
 	val_.sum2_        = 0.0;
 	val_.mean_        = 0.0;
 	val_.numSamples_  = 0;
 	val_.maxSevr_     = 0;
 	val_.maxSevrStat_ = 0;
 }
+
+void
+BsaComp::reset(BsaTimeStamp initTime)
+{
+	initTs_           = initTime;	
+	val_.missing_     = 0;
+	resetAvg();
+}
+
+void
+BsaComp::miss()
+{
+	val_.missing_++;
+}
+
+unsigned long
+BsaComp::getMissing() const
+{
+	return val_.missing_;
+};
 
 void
 BsaComp::addData(double x, BsaTimeStamp ts, uint16_t sevr, uint16_t stat)

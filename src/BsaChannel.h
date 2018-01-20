@@ -1,42 +1,95 @@
+#ifndef BSA_CHANNEL_H
+#define BSA_CHANNEL_H
+
+#include <bsaCallbackApi.h>
+#include <BsaApi.h>
+#include <BsaTimeStamp.h>
+#include <BsaComp.h>
+#include <RingBufferSync.h>
+#include <PatternBuffer.h>
+#include <stdint.h>
+#include <mutex>
+
 typedef signed char BsaChid;
-typedef signed char BsaEdef;
 
 typedef struct BsaDatum {
 	double       val;
 	BsaTimeStamp timeStamp;
-	BsaStat      status;
-	BsaSevr      severity;
-	BsaChid      chid;
+	BsaStat      stat;
+	BsaSevr      sevr;
+
+	BsaDatum(epicsTimeStamp ts, double val, BsaStat stat, BsaSevr sevr)
+	: val      ( val  ),
+      timeStamp( ts   ),
+      stat     ( stat ),
+      sevr     ( sevr )
+	{
+	}
 } BsaDatum;
 
 typedef struct BsaResultItem {
-	BsaChid      chid;
-	BsaEdef      edef;
-	BsaResult    result;
+	BsaEdef                 edef;
+	unsigned                seq_;
+	struct BsaResultStruct  result;
 } BsaResultItem;
 
-class CBsaSink {
-private:
+class BsaSlot {
+public:
+	BsaPattern               *pattern_;
 	unsigned                  noChangeCnt_;
 	BsaComp                   comp_;
+	unsigned                  seq_;
+	void                     *usrPvt_;
 	BsaSimpleDataSinkStruct   callbacks_;
+
 };
 
-class CBsaCore {
-private:
+class BsaChannelImpl {
+public:
 	static const unsigned IBUF_SIZE_LD = 10;
 	static const unsigned OBUF_SIZE_LD = 10;
-	static const unsigned PBUF_SIZE_LD = 10;
 
 	static const BsaSevr  SEVR_OK      =  0;
 	static const BsaSevr  SEVR_MIN     =  1;
 	static const BsaSevr  SEVR_MAJ     =  2;
 	static const BsaSevr  SEVR_INV     =  3;
 
+private:
+	RingBufferSync<BsaDatum>                    inpBuf_;
+	RingBufferSync<BsaResultItem>               outBuf_;
+
+	std::vector<BsaSlot>                        slots_;
+	uint64_t                                    inUseMask_;
+
+	unsigned long                               patternTooNew_;
+	unsigned long                               patternTooOld_;
+	unsigned long                               patternNotFnd_;
+
+	typedef std::unique_lock<std::mutex>        Lock;
+	std::mutex                                  mtx_;
+
+	BsaChannelImpl(const BsaChannelImpl&);
+	BsaChannelImpl & operator=(const BsaChannelImpl&);
+	
+public:
+	BsaChannelImpl();
+
+	virtual int storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
+
+	virtual void processInput(PatternBuffer*);
+
+	virtual void processOutput();
+
+	virtual ~BsaChannelImpl() {};
+};
+
+#if 0
+class CBsaCore {
+private:
+	static const unsigned PBUF_SIZE_LD = 10;
+
 	typedef std::vector<CBsaSink> SinkVec;
 
-	RingBufferSync<BsaDatum,      IBUF_SIZE_LD> inpBuf_;
-	RingBufferSync<BsaResultItem, OBUF_SIZE_LD> outBuf_;
 
 	RingBufferSync<BsaTimingData, PBUF_SIZE_LD> patBuf_;
 
@@ -108,3 +161,5 @@ private:
 	}
 
 };
+#endif
+#endif

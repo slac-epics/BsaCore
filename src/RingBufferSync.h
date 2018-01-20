@@ -7,11 +7,12 @@
 
 // Ring buffer with synchronization (producer sleeps on full,
 // consumer on empty).
-template <typename T>
-class RingBufferSync : public RingBuffer<T> {
+template <typename T, typename ELT = const T&>
+class RingBufferSync : public RingBuffer<T, ELT> {
 private:
+	unsigned                 minfill_;
 	std::mutex               mtx_;
-	std::condition_variable  not_empty_;
+	std::condition_variable  minfilled_;
 	std::condition_variable  not_full_;
 
 protected:
@@ -28,58 +29,95 @@ protected:
 		not_full_.notify_one();
 	}	
 
-	void notifyNotEmpty()
+	void notifyMinFilled()
 	{
-		not_full_.notify_one();
-	}	
-
-public:
-	RingBufferSync(unsigned ldSz)
-	: RingBuffer<T>( ldSz )
-	{
+		minfilled_.notify_one();
 	}
 
-	bool pop(T *pv = 0, bool doBlock = true)
+	virtual bool checkMinFilled()
+	{
+		return RingBuffer<T,ELT>::size() > minfill_ ;
+	}
+
+	bool wait(T *pv, bool doBlock, bool doPop)
 	{
 	std::unique_lock<std::mutex> l( mtx_ );
 		if ( doBlock ) {
-			while ( RingBuffer<T>::empty() ) {
-				not_empty_.wait( l );
+			while ( ! checkMinFilled() ) {
+				minfilled_.wait( l );
 			}
 		} else {
-			if ( RingBuffer<T>::empty() ) {
+			if ( ! checkMinFilled() ) {
 				return false;
 			}
 		}
 		if ( pv ) {
-			*pv = RingBuffer<T>::front();
+			*pv = RingBuffer<T,ELT>::front();
 		}
-		RingBuffer<T>::pop();
-		l.unlock();
-		notifyNotFull();
+		if ( doPop ) {
+			RingBuffer<T,ELT>::pop();
+			l.unlock();
+			notifyNotFull();
+		}
 		return true;
 	}
 
-	bool push_back(const T &v, bool doBlock = true)
+	virtual void finalizePush()
+	{
+	}
+
+public:
+	// minfill: the number of elements that must always remain in the buffer
+	RingBufferSync(unsigned ldSz, unsigned minfill = 0)
+	: RingBuffer<T,ELT>( ldSz    ),
+	  minfill_     ( minfill )
+	{
+		if ( minfill >= (unsigned)(1<<ldSz) ) {
+			throw std::runtime_error("Requested minfill too big");
+		}
+	}
+
+	bool push_back(ELT v, bool doBlock = true)
 	{
 	std::unique_lock<std::mutex> l( mtx_ );
+	bool                         doNotify;
 		if ( doBlock ) {
-			while ( RingBuffer<T>::full() ) {
+			while ( RingBuffer<T,ELT>::full() ) {
 				not_full_.wait( l );
 			}
 		} else {
-			if ( RingBuffer<T>::full() ) {
+			if ( RingBuffer<T,ELT>::full() ) {
 				return false;
 			}
 		}
-		RingBuffer<T>::push_back( v );
+		RingBuffer<T,ELT>::push_back( v );
+
+		finalizePush();
+
+		doNotify = checkMinFilled();
 		l.unlock();
-		notifyNotEmpty();
+		if ( doNotify )
+			notifyMinFilled();
 		return true;
 	}
 
+	void wait()
+	{
+		wait( 0, true, false );
+	}
+
+	bool tryWait()
+	{
+		return wait( 0, false, false );
+	}
+
+	bool pop(T *pv, bool doBlock = true)
+	{
+		return wait( pv, doBlock, true );
+	}
+
 	void
-	lockedWork( void (*fn)(RingBufferSync<T> *me, void *closure), void *closure )
+	lockedWork( void (*fn)(RingBufferSync<T,ELT> *me, void *closure), void *closure )
 	{
 	std::unique_lock<std::mutex> l( mtx_ );
 		fn( this, closure );

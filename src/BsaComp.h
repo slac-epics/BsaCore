@@ -9,6 +9,7 @@ typedef struct BsaVal {
 	double        sum2_;
 	double        mean_;
 	unsigned long numSamples_;
+	unsigned long missing_;
 	uint16_t      maxSevr_;
 	uint16_t      maxSevrStat_;
 } BsaVal;
@@ -23,7 +24,11 @@ public:
 
 	virtual void          reset(BsaTimeStamp ts);
 
+	virtual void          resetAvg();
+
 	virtual void          addData(double x, BsaTimeStamp ts, uint16_t sevr, uint16_t stat);
+
+	virtual void          miss();
 
 	virtual unsigned long getNum()        const;
 	virtual double        getMean()       const;
@@ -34,6 +39,8 @@ public:
 	virtual BsaVal        getVal()        const;
 
 	virtual BsaTimeStamp  getTimeStamp()  const;
+
+	virtual unsigned long getMissing()    const;
 
 	virtual ~BsaComp();
 };

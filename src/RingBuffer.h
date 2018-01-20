@@ -8,7 +8,7 @@
 
 // Ring-buffer WITHOUT range checking!
 // Size is a power of 2.
-template <typename T>
+template <typename T, typename ELT = const T &>
 class RingBuffer {
 private:
 	std::vector<T> buf_;
@@ -62,6 +62,22 @@ printf("Reserving\n");
 		return size() == m_ + 1;
 	}
 
+	unsigned head() const
+	{
+		return h_;
+	}
+
+	unsigned tail() const
+	{
+		return t_ - 1;
+	}
+
+	T & get(unsigned idx)
+	{
+		return buf_[ idx & m_ ];
+	}
+
+
 	// 0 finds the oldest item
 	T & operator[](unsigned idx)
 	{
@@ -90,7 +106,7 @@ printf("Reserving\n");
 	}
 
 
-	void push_back(const T &val)
+	void push_back(ELT val)
 	{
 		buf_[t_ & m_] = val;
 		t_++;
