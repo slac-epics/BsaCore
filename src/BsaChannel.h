@@ -28,9 +28,33 @@ typedef struct BsaDatum {
 } BsaDatum;
 
 typedef struct BsaResultItem {
-	BsaEdef                 edef;
+	BsaEdef                 edef_;
 	unsigned                seq_;
-	struct BsaResultStruct  result;
+	struct BsaResultStruct  result_;
+
+	BsaResultItem(
+		BsaEdef        edef,
+		unsigned       seq,
+		double         avg,
+		double         rms,
+		unsigned long  count,
+		unsigned long  missed, // # of pulses with active EDEF but no data was received
+		epicsTimeStamp timeStamp,
+		BsaPulseId     pulseId,
+		BsaStat        stat,
+		BsaSevr        sevr)
+	{
+		edef_             = edef;
+		seq_              = seq;
+		result_.avg       = avg;
+		result_.rms       = rms;
+		result_.count     = count;
+		result_.missed    = missed;
+		result_.timeStamp = timeStamp;
+		result_.pulseId   = pulseId;
+		result_.stat      = stat;
+		result_.sevr      = sevr;
+	}
 } BsaResultItem;
 
 class BsaSlot {
@@ -38,6 +62,7 @@ public:
 	BsaPattern               *pattern_;
 	unsigned                  noChangeCnt_;
 	BsaComp                   comp_;
+	BsaPulseId                pulseId_;
 	unsigned                  seq_;
 	void                     *usrPvt_;
 	BsaSimpleDataSinkStruct   callbacks_;

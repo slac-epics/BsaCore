@@ -1,5 +1,6 @@
 #include <BsaChannel.h>
 #include <stdexcept>
+#include <math.h>
 
 BsaChannelImpl::BsaChannelImpl()
 : inpBuf_   ( IBUF_SIZE_LD ),
@@ -22,6 +23,8 @@ void
 BsaChannelImpl::finalizePop(PatternBuffer *pbuf)
 {
 	if ( deferred_ ) {
+		// we unlock the mutex but the caller still holds the pattern buffer lock.
+		// Thus 'processInput'
 		mtx_.unlock();
 		deferred_ = false;
 	}
@@ -35,12 +38,13 @@ uint64_t msk, act;
 
 	act = pattern->edefActiveMask | pattern->edefInitMask;
 
-	for ( edef = 0, msk = 1;  act; edef++, msk <<= 1, (act &= ~msk) ) {
 	Lock lg( mtx_ );
+
+	for ( edef = 0, msk = 1;  act; edef++, msk <<= 1, (act &= ~msk) ) {
 		if ( pattern == slots_[edef].pattern_ ) {
 			// The pattern associated with the last computation done for this edef
 			// is about to expire. The computation has been done, so there are no
-			// lost data at this point but we must clear the 'pattern_'.
+			// lost data at this point but we must release the 'pattern_'.
 			slots_[edef].pattern_ = 0;
 			pbuf->patternPut( pattern );
 			// Keep the this slot locked until the pattern is truly gone so
@@ -52,7 +56,6 @@ uint64_t msk, act;
 			// pattern again and believe it to be expired since it would find a
 			// 'pattern_ == 0' condition.
 			deferred_ = true;
-			lg.release();
 		} else if ( ! slots_[edef].pattern_ ) {
 			// the last computation on this slot was done in the past. We must
 			// examine this pattern and account for it before we can evict it
@@ -60,6 +63,9 @@ uint64_t msk, act;
 		} // else: nothing to do; the computation is up-to-date (= more recent than this pattern)
           //       and everything up to slots_[edef].pattern_ has been accounted for already
 	}
+
+	if ( deferred_ )
+		lg.release();
 }
 
 void
@@ -71,7 +77,6 @@ BsaSevr  edefSevr;
 	if ( pattern->edefInitMask & msk ) {
 		slots_[edef].comp_.reset( pattern->timeStamp );
 		slots_[edef].seq_ = 0;
-		// TODO: store INIT event
 	}
 
 	if ( pattern->edefActiveMask & msk ) {
@@ -86,6 +91,7 @@ BsaSevr  edefSevr;
 
 			if ( item->sevr < edefSevr ) {
 				slots_[edef].comp_.addData( item->val, item->timeStamp, item->sevr, item->stat );
+				slots_[edef].pulseId_ = pattern->pulseId;
 			}
 		} else {
 			slots_[edef].comp_.miss();
@@ -93,7 +99,21 @@ BsaSevr  edefSevr;
 	}
 
 	if ( pattern->edefAvgDoneMask & msk ) {
-		// TODO: AVG DONE
+		unsigned long n = slots_[edef].comp_.getNum();
+		outBuf_.push_back(
+			BsaResultItem(
+				edef,
+				slots_[edef].seq_,
+				slots_[edef].comp_.getMean(),
+				::sqrt(slots_[edef].comp_.getSumSquares())/(double)n,
+				n,
+				slots_[edef].comp_.getMissing(),
+				slots_[edef].comp_.getTimeStamp(),
+				slots_[edef].pulseId_,
+				slots_[edef].comp_.getMaxSevr(),
+				slots_[edef].comp_.getMaxSevrStat()
+			)
+		);
 		slots_[edef].comp_.resetAvg();
 		slots_[edef].seq_++;
 	}
@@ -111,6 +131,8 @@ BsaEdef     i;
 	BsaDatum item( inpBuf_.front() );
 
 	try {
+		Lock lg( mtx_ );
+
 		pattern = pbuf->patternGet( item.timeStamp );
 
 		act = pattern->edefActiveMask;
@@ -124,8 +146,6 @@ BsaEdef     i;
 				slots_[i].noChangeCnt_++;
 				continue;
 			}
-
-			Lock lg( mtx_ );
 
 			tmpPattern = slots_[i].pattern_;
 
@@ -166,7 +186,6 @@ BsaEdef     i;
 			process( i, pattern, &item );
 		}
 
-
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {
 		patternTooNew_++;
@@ -186,11 +205,11 @@ BsaChannelImpl::processOutput()
 
 	BsaResultItem &item( outBuf_.front() );
 
-	if ( (1<<item.edef) & inUseMask_ ) {
+	if ( (1<<item.edef_) & inUseMask_ ) {
 		if ( item.seq_ == 0 ) {
-			slots_[item.edef].callbacks_.OnInit( this, slots_[item.edef].usrPvt_ );
+			slots_[item.edef_].callbacks_.OnInit( this, slots_[item.edef_].usrPvt_ );
 		}
-		slots_[item.edef].callbacks_.OnResult( this, &item.result, 1, slots_[item.edef].usrPvt_ );
+		slots_[item.edef_].callbacks_.OnResult( this, &item.result_, 1, slots_[item.edef_].usrPvt_ );
 	}
 
 	outBuf_.pop( 0 );

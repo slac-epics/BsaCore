@@ -40,7 +40,7 @@ BsaComp::getMissing() const
 };
 
 void
-BsaComp::addData(double x, BsaTimeStamp ts, uint16_t sevr, uint16_t stat)
+BsaComp::addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat)
 {
 double d1,d2;
 
@@ -106,7 +106,7 @@ BsaComp::getNum() const
 double
 BsaComp::getMean() const
 {
-	return val_.mean_;
+	return getNum() ? val_.mean_ : 0./0.;
 }
 
 double

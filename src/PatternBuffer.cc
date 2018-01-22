@@ -128,7 +128,9 @@ Lock lg( getMtx() );
 
 	if ( ! pat || ! ( (pat->edefInitMask | pat->edefActiveMask) & (1<<edef)) )
 		return 0;
+
 	unsigned idx = pat->seqIdx_[edef] - indexBufs_[edef]->head() + 1;
+
 	if ( idx >= indexBufs_[edef]->size() ) {
 		// no newer active pattern available
 		return 0;
