@@ -44,7 +44,7 @@ public:
 
 };
 
-class BsaChannelImpl {
+class BsaChannelImpl : public FinalizePopCallback {
 public:
 	static const unsigned IBUF_SIZE_LD = 10;
 	static const unsigned OBUF_SIZE_LD = 10;
@@ -68,19 +68,34 @@ private:
 	typedef std::unique_lock<std::mutex>        Lock;
 	std::mutex                                  mtx_;
 
+	bool                                        deferred_;
+
 	BsaChannelImpl(const BsaChannelImpl&);
 	BsaChannelImpl & operator=(const BsaChannelImpl&);
 	
 public:
 	BsaChannelImpl();
 
-	virtual int storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
+	virtual int
+	storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
 
-	virtual void processInput(PatternBuffer*);
+	virtual void
+	processInput(PatternBuffer*);
 
-	virtual void processOutput();
+	virtual void
+	processOutput();
 
-	virtual ~BsaChannelImpl() {};
+	void
+	process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item);
+
+	virtual void
+	finalizePop(PatternBuffer *pbuf);
+
+	void
+	evict(PatternBuffer *pbuf, BsaPattern *pattern);
+
+	virtual
+	~BsaChannelImpl() {};
 };
 
 #if 0

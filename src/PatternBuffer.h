@@ -16,17 +16,18 @@ typedef signed char BsaEdef;
 
 typedef struct BsaPattern : public BsaTimingData {
 private:
-	std::atomic<int> refCount_;
-	PatternIdx       seqIdx_[NUM_EDEF_MAX];
+	std::atomic<int>      refCount_;
+	PatternIdx            seqIdx_[NUM_EDEF_MAX];
+
 public:
 	BsaPattern(const BsaTimingData *p)
-	: BsaTimingData( *p ),
-	  refCount_    (  0 )
+	: BsaTimingData( *p    ),
+	  refCount_    ( 0     )
 	{
 	}
 
 	BsaPattern()
-	: refCount_( 0 )
+	: refCount_( 0     )
 	{
 	}
 
@@ -49,9 +50,9 @@ public:
 		return --refCount_;
 	}
 
-	int  getRef()
+	int  getRef() const
 	{
-		return refCount_;
+		return refCount_.load();
 	}
 
 	friend class PatternBuffer;
@@ -61,21 +62,33 @@ class PatternExpired  {};
 class PatternTooNew   {};
 class PatternNotFound {};
 
+class PatternBuffer;
+
+class FinalizePopCallback {
+public:
+	virtual void finalizePop(PatternBuffer *) = 0;
+
+	virtual ~FinalizePopCallback(){}
+};
+
 class PatternBuffer : public RingBufferSync<BsaPattern, const BsaTimingData*> {
 private:
 	PatternBuffer(const PatternBuffer &);
 	PatternBuffer & operator=(const PatternBuffer&);
 
-	typedef std::unique_ptr< RingBuffer<PatternIdx> > IndexBufPtr;
+    typedef std::unique_ptr< RingBuffer<PatternIdx> > IndexBufPtr;
 
-	std::vector<IndexBufPtr> indexBufs_;
+	std::vector<IndexBufPtr>           indexBufs_;
+	std::vector<FinalizePopCallback*>  finalizeCallbacks_;              
 
 protected:
 	virtual bool checkMinFilled();
 
 	virtual void finalizePush();
+	virtual void finalizePop();
 
 public:
+
 	PatternBuffer(unsigned ldSz, unsigned minfill);
 
 	virtual BsaPattern *patternGet(BsaTimeStamp ts);
@@ -87,6 +100,8 @@ public:
 	virtual BsaPattern *patternGetNext(BsaPattern *pat, BsaEdef edef);
 
 	virtual BsaPattern *patternGetPrev(BsaPattern *pat, BsaEdef edef);
+
+	virtual void addFinalizePop(FinalizePopCallback *);
 
 	virtual void patternPut(BsaPattern *pattern);
 

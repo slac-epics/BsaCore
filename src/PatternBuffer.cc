@@ -93,6 +93,34 @@ PatternIdx  h = head();
 	
 }
 
+void
+PatternBuffer::finalizePop()
+{
+BsaPattern &pat( back() );
+unsigned    i;
+uint64_t    anyMask = pat.edefInitMask | pat.edefActiveMask;
+uint64_t    m;
+
+std::vector<FinalizePopCallback*>::iterator it;
+
+	for ( it = finalizeCallbacks_.begin(); it != finalizeCallbacks_.end(); ++it ) {
+		(*it)->finalizePop( this );
+	}
+
+	for ( i=0, m=1; anyMask; i++, m<<=1 ) {
+		if ( (anyMask & m) ) {
+			indexBufs_[i]->pop();
+			anyMask &= ~m;
+		}
+	}
+}
+
+void
+PatternBuffer::addFinalizePop(FinalizePopCallback *cb)
+{
+	finalizeCallbacks_.push_back( cb );
+}
+
 BsaPattern *
 PatternBuffer::patternGetNext(BsaPattern *pat, BsaEdef edef)
 {

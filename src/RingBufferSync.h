@@ -39,6 +39,14 @@ protected:
 		return RingBuffer<T,ELT>::size() > minfill_ ;
 	}
 
+	virtual void finalizePush()
+	{
+	}
+
+	virtual void finalizePop()
+	{
+	}
+
 	bool wait(T *pv, bool doBlock, bool doPop)
 	{
 	std::unique_lock<std::mutex> l( mtx_ );
@@ -55,15 +63,12 @@ protected:
 			*pv = RingBuffer<T,ELT>::front();
 		}
 		if ( doPop ) {
+			finalizePop();
 			RingBuffer<T,ELT>::pop();
 			l.unlock();
 			notifyNotFull();
 		}
 		return true;
-	}
-
-	virtual void finalizePush()
-	{
 	}
 
 public:
