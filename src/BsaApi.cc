@@ -53,7 +53,7 @@ BSA_StoreData(
 	BsaSevr        severity
 )
 {
-	return bsaChannel->storeData(timeStamp, value, status, severity);
+	return theCore()->storeData(bsaChannel, timeStamp, value, status, severity);
 }
 
 /*

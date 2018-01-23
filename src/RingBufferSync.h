@@ -135,6 +135,33 @@ public:
 	std::unique_lock<std::mutex> l( mtx_ );
 		fn( this, closure );
 	}
+
+	virtual void
+	process(T *pitem)
+	{
+	}
+
+	void
+	process()
+	{
+		wait();
+
+		T &item( RingBuffer<T,ELT>::front() );
+
+		process( &item );
+
+		pop();
+	}
+
+	// thread function
+	static void
+	processLoop(void *arg)
+	{
+	RingBufferSync<T,ELT> *thebuf = (RingBufferSync<T,ELT>*)arg;
+		while ( 1 ) {
+			thebuf->process();
+		}
+	}
 };
 
 #endif

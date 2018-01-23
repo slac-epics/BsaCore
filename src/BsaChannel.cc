@@ -2,12 +2,12 @@
 #include <stdexcept>
 #include <math.h>
 
-BsaChannelImpl::BsaChannelImpl(const char *name)
-: inpBuf_   ( IBUF_SIZE_LD ),
-  outBuf_   ( OBUF_SIZE_LD ),
+BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultItem> *obuf)
+: outBuf_   ( obuf         ),
   inUseMask_( 0            ),
   deferred_ ( false        ),
-  name_     ( name         )
+  name_     ( name         ),
+  chid_     ( chid         )
 {
 	slots_.reserve( NUM_EDEF_MAX );
 }
@@ -16,13 +16,6 @@ const char *
 BsaChannelImpl::getName() const
 {
 	return name_.c_str();
-}
-
-int
-BsaChannelImpl::storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity)
-{
-	// non-blocking store
-	return !inpBuf_.push_back( BsaDatum( ts, value, status, severity ), false );
 }
 
 // called from the same thread that executes 'evict'
@@ -37,6 +30,8 @@ BsaChannelImpl::finalizePop(PatternBuffer *pbuf)
 	}
 }
 
+// remove the oldest pattern from the buffer and
+// update all affected computations
 void
 BsaChannelImpl::evict(PatternBuffer *pbuf, BsaPattern *pattern)
 {
@@ -107,8 +102,9 @@ BsaSevr  edefSevr;
 
 	if ( pattern->edefAvgDoneMask & msk ) {
 		unsigned long n = slots_[edef].comp_.getNum();
-		outBuf_.push_back(
+		outBuf_->push_back(
 			BsaResultItem(
+				chid_,
 				edef,
 				slots_[edef].seq_,
 				slots_[edef].comp_.getMean(),
@@ -127,20 +123,16 @@ BsaSevr  edefSevr;
 }
 
 void
-BsaChannelImpl::processInput(PatternBuffer *pbuf)
+BsaChannelImpl::processInput(PatternBuffer *pbuf, BsaDatum *pitem)
 {
 BsaPattern *pattern, *prevPattern, *tmpPattern;
 uint64_t    msk, act;
 BsaEdef     i;
 
-	inpBuf_.wait();
-
-	BsaDatum item( inpBuf_.front() );
-
 	try {
 		Lock lg( mtx_ );
 
-		pattern = pbuf->patternGet( item.timeStamp );
+		pattern = pbuf->patternGet( pitem->timeStamp );
 
 		act = pattern->edefActiveMask;
 
@@ -149,7 +141,7 @@ BsaEdef     i;
 				continue;
 			}
 
-			if ( slots_[i].comp_.getTimeStamp() == item.timeStamp ) {
+			if ( slots_[i].comp_.getTimeStamp() == pitem->timeStamp ) {
 				slots_[i].noChangeCnt_++;
 				continue;
 			}
@@ -190,7 +182,7 @@ BsaEdef     i;
 
 			pbuf->patternPut( prevPattern );
 
-			process( i, pattern, &item );
+			process( i, pattern, pitem );
 		}
 
 		pbuf->patternPut( pattern );
@@ -201,28 +193,18 @@ BsaEdef     i;
 	} catch (PatternNotFound &e) {
 		patternNotFnd_++;
 	}
-
-	inpBuf_.pop();
 }
 
 void
-BsaChannelImpl::processOutput()
+BsaChannelImpl::processOutput(BsaResultItem *pitem)
 {
-	outBuf_.wait();
-
-	BsaResultItem &item( outBuf_.front() );
-
-	{
-	Lock      lg( omtx_ );
-		if ( (1<<item.edef_) & inUseMask_ ) {
-			if ( item.seq_ == 0 ) {
-				slots_[item.edef_].callbacks_.OnInit( this, slots_[item.edef_].usrPvt_ );
-			}
-			slots_[item.edef_].callbacks_.OnResult( this, &item.result_, 1, slots_[item.edef_].usrPvt_ );
+Lock      lg( omtx_ );
+	if ( (1<<pitem->edef_) & inUseMask_ ) {
+		if ( pitem->seq_ == 0 ) {
+			slots_[pitem->edef_].callbacks_.OnInit( this, slots_[pitem->edef_].usrPvt_ );
 		}
+		slots_[pitem->edef_].callbacks_.OnResult( this, &pitem->result_, 1, slots_[pitem->edef_].usrPvt_ );
 	}
-
-	outBuf_.pop( 0 );
 }
 
 int
@@ -267,4 +249,10 @@ uint64_t  m = (1ULL<<edef);
 	inUseMask_ &= ~m;
 
 	return 0;
+}
+
+BsaChid
+BsaChannelImpl::getChid()
+{
+	return chid_;
 }

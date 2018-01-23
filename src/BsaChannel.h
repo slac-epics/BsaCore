@@ -17,22 +17,26 @@ typedef struct BsaDatum {
 	BsaTimeStamp timeStamp;
 	BsaStat      stat;
 	BsaSevr      sevr;
+	BsaChid      chid;
 
-	BsaDatum(epicsTimeStamp ts, double val, BsaStat stat, BsaSevr sevr)
+	BsaDatum(epicsTimeStamp ts, double val, BsaStat stat, BsaSevr sevr, BsaChid chid)
 	: val      ( val  ),
       timeStamp( ts   ),
       stat     ( stat ),
-      sevr     ( sevr )
+      sevr     ( sevr ),
+	  chid     ( chid )
 	{
 	}
 } BsaDatum;
 
 typedef struct BsaResultItem {
+	BsaChid                 chid_;
 	BsaEdef                 edef_;
 	unsigned                seq_;
 	struct BsaResultStruct  result_;
 
 	BsaResultItem(
+		BsaChid        chid,
 		BsaEdef        edef,
 		unsigned       seq,
 		double         avg,
@@ -44,6 +48,7 @@ typedef struct BsaResultItem {
 		BsaStat        stat,
 		BsaSevr        sevr)
 	{
+		chid_             = chid;
 		edef_             = edef;
 		seq_              = seq;
 		result_.avg       = avg;
@@ -71,17 +76,13 @@ public:
 
 class BsaChannelImpl : public FinalizePopCallback {
 public:
-	static const unsigned IBUF_SIZE_LD = 10;
-	static const unsigned OBUF_SIZE_LD = 10;
-
 	static const BsaSevr  SEVR_OK      =  0;
 	static const BsaSevr  SEVR_MIN     =  1;
 	static const BsaSevr  SEVR_MAJ     =  2;
 	static const BsaSevr  SEVR_INV     =  3;
 
 private:
-	RingBufferSync<BsaDatum>                    inpBuf_;
-	RingBufferSync<BsaResultItem>               outBuf_;
+	RingBufferSync<BsaResultItem>              *outBuf_;
 
 	std::vector<BsaSlot>                        slots_;
 	uint64_t                                    inUseMask_;
@@ -97,22 +98,20 @@ private:
 	bool                                        deferred_;
 
 	std::string                                 name_;
+	BsaChid                                     chid_;
 
 	BsaChannelImpl(const BsaChannelImpl&);
 	BsaChannelImpl & operator=(const BsaChannelImpl&);
 
 	
 public:
-	BsaChannelImpl(const char *name);
-
-	virtual int
-	storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
+	BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultItem> *obuf);
 
 	virtual void
-	processInput(PatternBuffer*);
+	processInput(PatternBuffer*, BsaDatum *);
 
 	virtual void
-	processOutput();
+	processOutput(BsaResultItem *pitem);
 
 	void
 	process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item);
@@ -131,6 +130,9 @@ public:
 
 	int
 	delSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure);
+
+	BsaChid
+	getChid();
 
 	virtual
 	~BsaChannelImpl() {};
