@@ -68,9 +68,9 @@ BsaCore::createChannel(const char *name)
 {
 BsaChannel found = findChannel( name );
 	if ( ! found ) {
-		BsaChid chid = channels_.size();
+		BsaChid     chid = channels_.size();
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
-		found        = new BsaChannelImpl( name, chid, obuf );
+		           found = new BsaChannelImpl( name, chid, obuf );
 		channels_.push_back( std::unique_ptr<BsaChannelImpl>( found ) );
 	}
 	return found;
