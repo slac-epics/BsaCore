@@ -75,15 +75,7 @@ typedef uint64_t BsaPulseId;
 
 typedef uint16_t BsaSevr;
 typedef  int16_t BsaStat;
-
-/*
- * Return max number of BSA channels supported
- * by the timing system.
- * 
- * RETURNS: -1 if BSA not yet bound to timing.
- */
-int
-bsaGetNumChannels();
+typedef   int8_t BsaEdef;
 
 /*
  * Opaque BSA channel object (specific to one variable)
@@ -101,7 +93,7 @@ typedef struct BsaChannelImpl *BsaChannel;
  */
 BsaChannel
 BSA_CreateChannel(
-	int channelId
+	const char *id
 );
 
 /*
@@ -113,7 +105,7 @@ BSA_CreateChannel(
  */
 BsaChannel
 BSA_FindChannel(
-	int channelId
+	const char *id
 );
 
 /*
@@ -128,7 +120,7 @@ BSA_ReleaseChannel(
 /*
  * Get ID of a channel
  */
-int
+const char *
 BSA_GetChannelId(
 	BsaChannel bsaChannel
 );
@@ -187,25 +179,9 @@ struct BsaResultStruct {
 
 typedef const struct BsaResultStruct *BsaResult;
 
-/*
- * Release a result or an array of results; the
- * user may have their own queues to store results.
- * When done, the result must be released.
- *
- * Notes: Results are read-only and could be shared
- *        by multiple sinks.
- *
- *        An array of results is only released once
- *        (the individual members are not released)
- */
-void
-BSA_ReleaseResults(
-	BsaResult results
-);
-
 struct BsaSimpleDataSinkStruct {
 	/* called when a new BSA starts */
-	void (*const OnInit)(
+	void (*OnInit)(
 		BsaChannel self,
 		void      *closure
 	);
@@ -217,7 +193,7 @@ struct BsaSimpleDataSinkStruct {
 	 *       results then BSA_ReleaseResults()
 	 *       must only be called once.
 	 */
-	void (*const OnResult)(
+	void (*OnResult)(
 		BsaChannel self,
 		BsaResult  results,
 		unsigned   numResults,
@@ -228,7 +204,7 @@ struct BsaSimpleDataSinkStruct {
 	/* called with error status (TBD) if a BSA is
 	 * terminated.
 	 */
-	void (*const OnAbort)(
+	void (*OnAbort)(
 		BsaChannel self,
 		int        status,
 		void      *closure
@@ -245,7 +221,7 @@ typedef const struct BsaSimpleDataSinkStruct *BsaSimpleDataSink;
 int
 BSA_AddSimpleSink(
 	BsaChannel        bsaChannel,
-	int               edefIndex,	
+	BsaEdef           edefIndex,	
 	BsaSimpleDataSink sink,
 	void             *closure
 );
@@ -259,10 +235,13 @@ BSA_AddSimpleSink(
 int
 BSA_DelSimpleSink(
 	BsaChannel        bsaChannel,
-	int               edefIndex,	
+	BsaEdef           edefIndex,	
 	BsaSimpleDataSink sink,
 	void             *closure
 );
+
+int
+BSA_TimingCallbackRegister();
 
 #ifdef __cplusplus
 }

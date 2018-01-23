@@ -108,7 +108,10 @@ public:
 
 	void wait()
 	{
-		wait( 0, true, false );
+	std::unique_lock<std::mutex> l( mtx_ );
+		while ( ! checkMinFilled() ) {
+			minfilled_.wait( l );
+		}
 	}
 
 	bool tryWait()
@@ -119,6 +122,11 @@ public:
 	bool pop(T *pv, bool doBlock = true)
 	{
 		return wait( pv, doBlock, true );
+	}
+
+	void pop()
+	{
+		wait();
 	}
 
 	void

@@ -13,6 +13,8 @@ LIBRARY_IOC += BsaCore
 BsaCore_SRCS += BsaComp.cc
 BsaCore_SRCS += PatternBuffer.cc
 BsaCore_SRCS += BsaChannel.cc
+BsaCore_SRCS += BsaCore.cc
+BsaCore_SRCS += BsaApi.cc
 
 #BsaCore_LIBS += $(EPICS_BASE_IOC_LIBS)
 

@@ -2,6 +2,7 @@
 #define BSA_PATTERN_BUFFER_H
 
 #include <bsaCallbackApi.h>
+#include <BsaApi.h>
 #include <BsaTimeStamp.h>
 #include <mutex>
 #include <memory>
@@ -9,8 +10,6 @@
 #include <RingBufferSync.h>
 
 typedef uint16_t PatternIdx;
-
-typedef signed char BsaEdef;
 
 #define NUM_EDEF_MAX 64
 

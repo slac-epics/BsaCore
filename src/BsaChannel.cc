@@ -2,13 +2,20 @@
 #include <stdexcept>
 #include <math.h>
 
-BsaChannelImpl::BsaChannelImpl()
+BsaChannelImpl::BsaChannelImpl(const char *name)
 : inpBuf_   ( IBUF_SIZE_LD ),
   outBuf_   ( OBUF_SIZE_LD ),
   inUseMask_( 0            ),
-  deferred_ ( false        )
+  deferred_ ( false        ),
+  name_     ( name         )
 {
 	slots_.reserve( NUM_EDEF_MAX );
+}
+
+const char *
+BsaChannelImpl::getName() const
+{
+	return name_.c_str();
 }
 
 int
@@ -195,7 +202,7 @@ BsaEdef     i;
 		patternNotFnd_++;
 	}
 
-	inpBuf_.pop( 0 );
+	inpBuf_.pop();
 }
 
 void
@@ -205,14 +212,59 @@ BsaChannelImpl::processOutput()
 
 	BsaResultItem &item( outBuf_.front() );
 
-	if ( (1<<item.edef_) & inUseMask_ ) {
-		if ( item.seq_ == 0 ) {
-			slots_[item.edef_].callbacks_.OnInit( this, slots_[item.edef_].usrPvt_ );
+	{
+	Lock      lg( omtx_ );
+		if ( (1<<item.edef_) & inUseMask_ ) {
+			if ( item.seq_ == 0 ) {
+				slots_[item.edef_].callbacks_.OnInit( this, slots_[item.edef_].usrPvt_ );
+			}
+			slots_[item.edef_].callbacks_.OnResult( this, &item.result_, 1, slots_[item.edef_].usrPvt_ );
 		}
-		slots_[item.edef_].callbacks_.OnResult( this, &item.result_, 1, slots_[item.edef_].usrPvt_ );
 	}
 
 	outBuf_.pop( 0 );
 }
 
+int
+BsaChannelImpl::addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure)
+{
+Lock      lg( omtx_ );
+uint64_t  m = (1ULL<<edef);
 
+	if ( edef >= NUM_EDEF_MAX ) {
+		throw std::runtime_error("BsaChannelImpl::addSink() Invalid EDEF (too big)");
+	}
+
+	if ( (m & inUseMask_) ) {
+		fprintf(stderr,"Multiple Sinks ATM Not Supported (channel %s, edef %d)\n", getName(), edef);
+		return -1;
+	}
+
+	slots_[edef].callbacks_ = *sink;
+
+	inUseMask_ |= m;
+
+
+	return 0;
+}
+
+
+int
+BsaChannelImpl::delSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure)
+{
+Lock      lg( omtx_ );
+uint64_t  m = (1ULL<<edef);
+
+	if ( edef >= NUM_EDEF_MAX ) {
+		throw std::runtime_error("BsaChannelImpl::delSink() Invalid EDEF (too big)");
+	}
+
+	if ( ! (m & inUseMask_) ) {
+		fprintf(stderr,"Sinks Not Connected (channel %s, edef %d)\n", getName(), edef);
+		return -1;
+	}
+
+	inUseMask_ &= ~m;
+
+	return 0;
+}

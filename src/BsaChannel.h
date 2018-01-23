@@ -92,14 +92,18 @@ private:
 
 	typedef std::unique_lock<std::mutex>        Lock;
 	std::mutex                                  mtx_;
+	std::mutex                                  omtx_;
 
 	bool                                        deferred_;
 
+	std::string                                 name_;
+
 	BsaChannelImpl(const BsaChannelImpl&);
 	BsaChannelImpl & operator=(const BsaChannelImpl&);
+
 	
 public:
-	BsaChannelImpl();
+	BsaChannelImpl(const char *name);
 
 	virtual int
 	storeData(epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
@@ -119,87 +123,17 @@ public:
 	void
 	evict(PatternBuffer *pbuf, BsaPattern *pattern);
 
+	const char *
+	getName() const;
+
+	int
+	addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure);
+
+	int
+	delSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure);
+
 	virtual
 	~BsaChannelImpl() {};
 };
 
-#if 0
-class CBsaCore {
-private:
-	static const unsigned PBUF_SIZE_LD = 10;
-
-	typedef std::vector<CBsaSink> SinkVec;
-
-
-	RingBufferSync<BsaTimingData, PBUF_SIZE_LD> patBuf_;
-
-	std::vector< SinkVec               >        matrix_;
-
-	std::vector< uint64_t              >        inUse_;
-
-	void processInp()
-	{
-		while (1) {
-			BsaDatum       item;
-			BsaTimingData  *pattern;
-			uint64_t        edefMask, anyMask;
-			unsigned        edefIdx;
-			BsaSevr         edefSevr;
-
-			inpBuf_.pop( &item );
-
-			if ( (pattern = bsaTimingDataGet( item.timeStamp ) ) ) {
-
-				SinkVec &svec( matrix_[item.chid] );
-
-				anyMask =   pattern->edefInitMask
-				          | pattern->edefActiveMask
-				          | pattern->edefAvgDoneMask
-				          | pattern->edefAllDoneMask
-				          | pattern->edefUpdateMask;
-
-				anyMask &= inUse_[ item.chid ];
-
-				for ( edefMask = 1, edefIdx = 1; anyMask; anyMask &= ~edefMask, edefMask <<= 1, edefIdx++ ) {
-					CBsaSink &edef( svec[edefIdx] );
-
-					if ( (pattern->edefInitMask & edefMask) ) {
-						edef.comp.reset( pattern->timeStamp );
-					}
-
-					if ( (pattern->edefActiveMask & edefMask) ) {
-
-						if ( edef.comp.getTimeStamp() == item.timeStamp ) {
-							edef.noChangeCnt_++;
-						} else {
-
-							if ( (pattern->edefMinorMask & edefMask) ) {
-								edefSevr = SEVR_MIN;
-							} else if ( (pattern->edefMajorMask & edefMask) ) {
-								edefSevr = SEVR_MAJ;
-							} else {
-								edefSevr = SEVR_INV;
-							}
-
-							if ( item.severity < edefSevr ) {
-
-								if ( item.severity > 
-
-
-							}
-
-						}
-						if ( (pattern->edefAvgDoneMask & edefMask) ) {
-						}
-					}
-				}
-
-				bsaTimingDataPut( pattern );
-			}
-			
-		}
-	}
-
-};
-#endif
 #endif
