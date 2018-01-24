@@ -70,5 +70,8 @@ public:
 	BsaChannel findChannel(BsaChid chid);
 
 	void       pushTimingData(const BsaTimingData *pattern);
+
+	// thread function
+	static void evictOldestPatternLoop(void *arg);
 };
 #endif

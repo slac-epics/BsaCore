@@ -33,6 +33,7 @@ BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
 {
 	inpBufs_.reserve(NUM_INP_BUFS);
 	outBufs_.reserve(NUM_OUT_BUFS);
+	std::thread( evictOldestPatternLoop, this );
 }
 
 BsaChannel
@@ -122,4 +123,13 @@ void
 BsaCore::processOutput(BsaResultItem *pitem)
 {
 	channels_[ pitem->chid_ ]->processOutput( pitem );
+}
+	
+void
+BsaCore::evictOldestPatternLoop(void *arg)
+{
+BsaCore *pcore = (BsaCore *)arg;
+	while ( 1 ) {
+		pcore->evictOldestPattern();
+	}
 }
