@@ -31,15 +31,8 @@ BsaOutBuf::BsaOutBuf(BsaCore *pcore, unsigned ldSz)
 BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
 : pbuf_( pbufLdSz, pbufMinFill )
 {
-unsigned i;
-	for ( i = 0; i<NUM_INP_BUFS; i++ ) {
-		inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf( this, IBUF_SIZE_LD ) ) );
-		std::thread( BsaInpBuf::processLoop, inpBufs_[i].get() );
-	}
-	for ( i = 0; i<NUM_OUT_BUFS; i++ ) {
-		outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD ) ) );
-		std::thread( BsaOutBuf::processLoop, outBufs_[i].get() );
-	}
+	inpBufs_.reserve(NUM_INP_BUFS);
+	outBufs_.reserve(NUM_OUT_BUFS);
 }
 
 BsaChannel
@@ -69,6 +62,14 @@ BsaCore::createChannel(const char *name)
 BsaChannel found = findChannel( name );
 	if ( ! found ) {
 		BsaChid     chid = channels_.size();
+		if ( (unsigned)chid < NUM_INP_BUFS ) {
+			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf( this, IBUF_SIZE_LD ) ) );
+			std::thread( BsaInpBuf::processLoop, inpBufs_[chid % NUM_INP_BUFS].get() );
+		}
+		if ( (unsigned)chid < NUM_OUT_BUFS ) {
+			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD ) ) );
+			std::thread( BsaOutBuf::processLoop, outBufs_[chid % NUM_OUT_BUFS].get() );
+		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
 		           found = new BsaChannelImpl( name, chid, obuf );
 		channels_.push_back( std::unique_ptr<BsaChannelImpl>( found ) );
