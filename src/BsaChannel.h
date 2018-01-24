@@ -72,6 +72,10 @@ public:
 	void                     *usrPvt_;
 	BsaSimpleDataSinkStruct   callbacks_;
 
+	BsaSlot()
+	: pattern_ (0)
+	{
+	}
 };
 
 class BsaChannelImpl : public FinalizePopCallback {

@@ -9,7 +9,11 @@ BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<Bs
   name_     ( name         ),
   chid_     ( chid         )
 {
+unsigned i;
 	slots_.reserve( NUM_EDEF_MAX );
+	for ( i=0; i<NUM_EDEF_MAX; i++ ) {
+		slots_.push_back( BsaSlot() );
+	}
 }
 
 const char *
@@ -40,10 +44,13 @@ uint64_t msk, act;
 
 	act = pattern->edefActiveMask | pattern->edefInitMask;
 
+printf("evict -- enter \n");
 	Lock lg( mtx_ );
 
-	for ( edef = 0, msk = 1;  act; edef++, msk <<= 1, (act &= ~msk) ) {
+	for ( edef = 0, msk = 1;  act; edef++, (act &= ~msk), msk <<= 1 ) {
+printf("Evicting edef %d (act %llu, msk %llu)\n", edef, (unsigned long long)act, (unsigned long long)msk);
 		if ( pattern == slots_[edef].pattern_ ) {
+printf("evict -- found pattern\n");
 			// The pattern associated with the last computation done for this edef
 			// is about to expire. The computation has been done, so there are no
 			// lost data at this point but we must release the 'pattern_'.
@@ -59,11 +66,13 @@ uint64_t msk, act;
 			// 'pattern_ == 0' condition.
 			deferred_ = true;
 		} else if ( ! slots_[edef].pattern_ ) {
+printf("evict -- no pattern\n");
 			// the last computation on this slot was done in the past. We must
 			// examine this pattern and account for it before we can evict it
 			process( edef, pattern, 0 );
 		} // else: nothing to do; the computation is up-to-date (= more recent than this pattern)
           //       and everything up to slots_[edef].pattern_ has been accounted for already
+else printf("evict -- newer pattern\n");
 	}
 
 	if ( deferred_ )
@@ -76,13 +85,17 @@ BsaChannelImpl::process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item)
 uint64_t msk = (1ULL<<edef);
 BsaSevr  edefSevr;
 
+printf("BsaChannelImpl::process (edef %d)\n", edef);
+
 	if ( pattern->edefInitMask & msk ) {
+printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 		slots_[edef].comp_.reset( pattern->timeStamp );
 		slots_[edef].seq_ = 0;
 	}
 
 	if ( pattern->edefActiveMask & msk ) {
 		if ( item ) {
+printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
 			if ( pattern->edefMinorMask & msk ) {
 				edefSevr = SEVR_MIN;
 			} else if ( pattern->edefMajorMask & msk ) {
@@ -96,11 +109,13 @@ BsaSevr  edefSevr;
 				slots_[edef].pulseId_ = pattern->pulseId;
 			}
 		} else {
+printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 			slots_[edef].comp_.miss();
 		}
 	}
 
 	if ( pattern->edefAvgDoneMask & msk ) {
+printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
 		unsigned long n = slots_[edef].comp_.getNum();
 		outBuf_->push_back(
 			BsaResultItem(
@@ -132,16 +147,21 @@ BsaEdef     i;
 	try {
 		Lock lg( mtx_ );
 
+
 		pattern = pbuf->patternGet( pitem->timeStamp );
+
+printf("ChannelImpl::processInput -- got item (pulse id %llu)\n", (unsigned long long) pattern->pulseId);
 
 		act = pattern->edefActiveMask;
 
-		for ( i = 0, msk = 1;  act; i++, msk <<= 1, (act &= ~msk) ) {
+		for ( i = 0, msk = 1;  act; i++, (act &= ~msk), msk <<= 1 ) {
 			if ( ! (msk & act) ) {
+printf("processInput(%d) -- not active\n",i);
 				continue;
 			}
 
 			if ( slots_[i].comp_.getTimeStamp() == pitem->timeStamp ) {
+printf("processInput(%d) -- no change\n",i);
 				slots_[i].noChangeCnt_++;
 				continue;
 			}
@@ -166,12 +186,18 @@ BsaEdef     i;
 				throw std::runtime_error("no previous pattern found");
 			}
 
+int dbg = 0;
+
 			while ( prevPattern != pattern ) {
+printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i, (unsigned long long)prevPattern->pulseId, (unsigned long long)pattern->pulseId);
+if ( ++dbg == 8 )
+	throw std::runtime_error("XX");
 
 				process( i, prevPattern, 0 );
 
 				tmpPattern = prevPattern;
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
+printf("Tmp REF: %d\n", tmpPattern->getRef());
 				pbuf->patternPut( tmpPattern );
 
 				if ( ! prevPattern ) {
@@ -187,10 +213,13 @@ BsaEdef     i;
 
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {
+printf("ProcessInput: pattern too new (%llu)\n", (unsigned long long)pitem->timeStamp);
 		patternTooNew_++;
 	} catch (PatternExpired &e) {
+printf("ProcessInput: pattern too old (%llu)\n", (unsigned long long)pitem->timeStamp);
 		patternTooOld_++;
 	} catch (PatternNotFound &e) {
+printf("ProcessInput: pattern not fnd (%llu)\n", (unsigned long long)pitem->timeStamp);
 		patternNotFnd_++;
 	}
 }

@@ -25,6 +25,11 @@ public:
 		return ts;
 	}
 
+	operator uint64_t()
+	{
+		return ts_;
+	}
+
 	bool operator == (const BsaTimeStamp &rhs) const { return ts_ == rhs.ts_; }
 	bool operator != (const BsaTimeStamp &rhs) const { return ts_ != rhs.ts_; }
 	bool operator <= (const BsaTimeStamp &rhs) const { return ts_ <= rhs.ts_; }

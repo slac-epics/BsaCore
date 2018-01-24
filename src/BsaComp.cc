@@ -5,10 +5,6 @@ BsaComp::BsaComp()
 	val_.numSamples_ = 0;
 }
 
-BsaComp::~BsaComp()
-{
-}
-
 void
 BsaComp::resetAvg()
 {
@@ -38,6 +34,31 @@ BsaComp::getMissing() const
 {
 	return val_.missing_;
 };
+
+BsaTimeStamp
+BsaComp::getTimeStamp()   const
+{
+	return val_.lastTs_;
+}
+
+BsaSevr
+BsaComp::getMaxSevr()     const
+{
+	return val_.maxSevr_;
+}
+
+BsaStat
+BsaComp::getMaxSevrStat() const
+{
+	return val_.maxSevrStat_;
+}
+
+const BsaVal &
+BsaComp::getVal() const
+{
+	return val_;
+}
+
 
 void
 BsaComp::addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat)

@@ -22,30 +22,28 @@ private:
 public:
 	BsaComp();
 
-	virtual void          reset(BsaTimeStamp ts);
+	void          reset(BsaTimeStamp ts);
 
-	virtual void          resetAvg();
+	void          resetAvg();
 
-	virtual void          addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat);
+	void          addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat);
 
-	virtual void          miss();
+	void          miss();
 
-	virtual unsigned long getNum()         const;
-	virtual double        getMean()        const;
-	virtual double        getSumSquares()  const;
+	unsigned long getNum()         const;
+	double        getMean()        const;
+	double        getSumSquares()  const;
 	// population variance
-	virtual double        getPopVar()      const;
+	double        getPopVar()      const;
 
-	virtual BsaVal        getVal()         const;
+	const BsaVal &getVal()         const;
 
-	virtual BsaTimeStamp  getTimeStamp()   const;
+	BsaTimeStamp  getTimeStamp()   const;
 
-	virtual unsigned long getMissing()     const;
+	unsigned long getMissing()     const;
  
-	virtual BsaSevr       getMaxSevr()     const;
-	virtual BsaStat       getMaxSevrStat() const;
-
-	virtual ~BsaComp();
+	BsaSevr       getMaxSevr()     const;
+	BsaStat       getMaxSevrStat() const;
 };
 
 #endif

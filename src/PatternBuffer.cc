@@ -28,8 +28,8 @@ BsaPattern *
 PatternBuffer::patternGet(BsaTimeStamp ts)
 {
 Lock lg( getMtx() );
-int  inew = -1;
-int  iold = -size();
+int  inew = size() - 1;
+int  iold = 0;
 
 	while ( iold <= inew ) {
 		int         im = (inew + iold) / 2;
@@ -45,9 +45,9 @@ int  iold = -size();
 			return rval;
 		}
 	}
-	if ( iold == 0 )
+	if ( iold == (int)size() )
 		throw PatternTooNew();
-	if ( inew + size() < 0 )
+	if ( inew < 0 )
 		throw PatternExpired();
 	throw PatternNotFound();
 }
@@ -68,7 +68,7 @@ void
 PatternBuffer::patternPut(BsaPattern *p)
 {
 Lock lg( getMtx() );
-	if ( p == &front() && checkMinFilled() ) {
+	if ( 0 == p->decRef() && p == &front() && checkMinFilled() ) {
 		lg.unlock();
 		notifyMinFilled();
 	}
@@ -81,12 +81,12 @@ BsaPattern &pat( back() );
 unsigned    i;
 uint64_t    anyMask = pat.edefInitMask | pat.edefActiveMask;
 uint64_t    m;
-PatternIdx  h = head();
+PatternIdx  t = tail();
 
 	for ( i=0, m=1; anyMask; i++, m<<=1 ) {
 		if ( (anyMask & m) ) {
-			indexBufs_[i]->push_back( h );
-			pat.seqIdx_[i] = indexBufs_[i]->head();
+			indexBufs_[i]->push_back( t );
+			pat.seqIdx_[i] = indexBufs_[i]->tail();
 			anyMask &= ~m;
 		}
 	}
@@ -129,13 +129,28 @@ Lock lg( getMtx() );
 	if ( ! pat || ! ( (pat->edefInitMask | pat->edefActiveMask) & (1<<edef)) )
 		return 0;
 
+printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->head());
+
 	unsigned idx = pat->seqIdx_[edef] - indexBufs_[edef]->head() + 1;
 
 	if ( idx >= indexBufs_[edef]->size() ) {
 		// no newer active pattern available
 		return 0;
 	}
-	BsaPattern *rval = & (*this)[ (*indexBufs_[edef])[idx] ];
+printf("indexBufs[%d], %d, pattern buf head %d\n", idx, (*indexBufs_[edef])[idx], head());
+	BsaPattern *rval = & (*this)[ (*indexBufs_[edef])[idx] - head() ];
+	rval->incRef();
+	return rval;
+}
+
+BsaPattern *
+PatternBuffer::patternGetOldest(BsaEdef edef)
+{
+Lock lg( getMtx() );
+
+	if ( indexBufs_[edef]->size() < 1 )
+		return 0;
+	BsaPattern * rval = & (*this)[ indexBufs_[edef]->front() - head() ];
 	rval->incRef();
 	return rval;
 }

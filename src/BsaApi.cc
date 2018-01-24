@@ -3,7 +3,7 @@
 
 static BsaCore *theCore()
 {
-static unsigned LD_PATTERNBUF_SZ   = 8;
+static unsigned LD_PATTERNBUF_SZ   = 2;
 static unsigned PATTERNBUF_MINFILL = (1<<(LD_PATTERNBUF_SZ - 1));
 static BsaCore theCore_( LD_PATTERNBUF_SZ, PATTERNBUF_MINFILL );
 	return &theCore_;

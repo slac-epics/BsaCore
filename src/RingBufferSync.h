@@ -126,7 +126,14 @@ public:
 
 	void pop()
 	{
-		wait();
+	std::unique_lock<std::mutex> l( mtx_ );
+		while ( ! checkMinFilled() ) {
+			minfilled_.wait( l );
+		}
+		finalizePop();
+		RingBuffer<T,ELT>::pop();
+		l.unlock();
+		notifyNotFull();
 	}
 
 	void

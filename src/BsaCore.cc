@@ -1,6 +1,9 @@
 #include <BsaCore.h>
 #include <string.h>
 #include <thread>
+#include <stdio.h>
+
+#define BSA_CORE_DEBUG
 
 BsaInpBuf::BsaInpBuf(BsaCore *pcore, unsigned ldSz)
 : RingBufferSync<BsaDatum>(ldSz),
@@ -33,7 +36,7 @@ BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
 {
 	inpBufs_.reserve(NUM_INP_BUFS);
 	outBufs_.reserve(NUM_OUT_BUFS);
-	std::thread( evictOldestPatternLoop, this );
+	new std::thread( evictOldestPatternLoop, this );
 }
 
 BsaChannel
@@ -65,11 +68,11 @@ BsaChannel found = findChannel( name );
 		BsaChid     chid = channels_.size();
 		if ( (unsigned)chid < NUM_INP_BUFS ) {
 			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf( this, IBUF_SIZE_LD ) ) );
-			std::thread( BsaInpBuf::processLoop, inpBufs_[chid % NUM_INP_BUFS].get() );
+			new std::thread( BsaInpBuf::processLoop, inpBufs_[chid % NUM_INP_BUFS].get() );
 		}
 		if ( (unsigned)chid < NUM_OUT_BUFS ) {
 			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD ) ) );
-			std::thread( BsaOutBuf::processLoop, outBufs_[chid % NUM_OUT_BUFS].get() );
+			new std::thread( BsaOutBuf::processLoop, outBufs_[chid % NUM_OUT_BUFS].get() );
 		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
 		           found = new BsaChannelImpl( name, chid, obuf );
@@ -82,6 +85,9 @@ void
 BsaCore::pushTimingData(const BsaTimingData *pattern)
 {
 	pbuf_.push_back( pattern );
+#ifdef BSA_CORE_DEBUG
+	printf("Entered pattern for pulse ID %llu (size %lu)\n", (unsigned long long)pattern->pulseId, (unsigned long) pbuf_.size());
+#endif
 }
 
 void
@@ -94,6 +100,10 @@ BsaChannelVec::iterator it;
 	pbuf_.wait();
 
 	pattern = &pbuf_.front();
+
+#ifdef BSA_CORE_DEBUG
+	printf("Evicting pattern for pulse ID %llu\n", (unsigned long long)pattern->pulseId);
+#endif
 
 	for ( it = channels_.begin(); it != channels_.end(); ++it ) {
 		// evict cached pointers from all channels

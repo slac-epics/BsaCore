@@ -30,7 +30,6 @@ public:
 	{
 		if ( ldSz > 16 )
 			throw std::range_error("RingBuffer: requested size too large");
-printf("Reserving\n");
 		buf_.reserve((1<<ldSz));
 	}
 

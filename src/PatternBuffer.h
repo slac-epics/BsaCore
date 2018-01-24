@@ -98,8 +98,6 @@ public:
 
 	virtual BsaPattern *patternGetNext(BsaPattern *pat, BsaEdef edef);
 
-	virtual BsaPattern *patternGetPrev(BsaPattern *pat, BsaEdef edef);
-
 	virtual void addFinalizePop(FinalizePopCallback *);
 
 	virtual void patternPut(BsaPattern *pattern);
