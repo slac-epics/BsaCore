@@ -13,8 +13,9 @@ PatternBuffer::PatternBuffer(unsigned ldSz, unsigned minfill)
 : RingBufferSync<BsaPattern, const BsaTimingData*>( ldSz, minfill )
 {
 unsigned i;
+	indexBufs_.reserve( NUM_EDEF_MAX );
 	for ( i=0; i<NUM_EDEF_MAX; i++ ) {
-		indexBufs_.push_back( IndexBufPtr( new RingBuffer<PatternIdx>( ldSz ) ) );
+		indexBufs_.push_back( IndexBufPtr( new RingBuffer<PatternIdx>( ldSz ) ) ) ;
 	}
 }
 

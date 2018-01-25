@@ -8,7 +8,6 @@
 #include <RingBufferSync.h>
 #include <PatternBuffer.h>
 #include <stdint.h>
-#include <mutex>
 
 typedef signed char BsaChid;
 

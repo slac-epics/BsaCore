@@ -3,8 +3,7 @@
 
 #include <RingBuffer.h>
 
-#undef  CPP11
-#ifdef CPP11
+#if __cplusplus > 199711L
 #include <condition_variable>
 #include <mutex>
 #else
@@ -16,7 +15,7 @@
 // consumer on empty).
 template <typename T, typename ELT = const T&>
 class RingBufferSync : public RingBuffer<T, ELT> {
-#ifdef CPP11
+#if __cplusplus > 199711L
 protected:
 	typedef std::mutex                   Mutex;
 	typedef std::condition_variable      CondVar;

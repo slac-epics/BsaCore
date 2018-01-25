@@ -4,10 +4,8 @@
 #include <bsaCallbackApi.h>
 #include <BsaApi.h>
 #include <BsaTimeStamp.h>
-#include <mutex>
-#include <memory>
-#include <atomic>
 #include <RingBufferSync.h>
+#include <BsaAlias.h>
 
 typedef uint16_t PatternIdx;
 
@@ -15,7 +13,8 @@ typedef uint16_t PatternIdx;
 
 typedef struct BsaPattern : public BsaTimingData {
 private:
-	std::atomic<int>      refCount_;
+	typedef BsaAlias::atomic<int>   RefCount;
+	RefCount              refCount_;
 	PatternIdx            seqIdx_[NUM_EDEF_MAX];
 
 public:
@@ -75,7 +74,8 @@ private:
 	PatternBuffer(const PatternBuffer &);
 	PatternBuffer & operator=(const PatternBuffer&);
 
-    typedef std::unique_ptr< RingBuffer<PatternIdx> > IndexBufPtr;
+    typedef RingBuffer<PatternIdx>           IndexBuf;
+    typedef BsaAlias::unique_ptr< IndexBuf > IndexBufPtr;
 
 	std::vector<IndexBufPtr>           indexBufs_;
 	std::vector<FinalizePopCallback*>  finalizeCallbacks_;              

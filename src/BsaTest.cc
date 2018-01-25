@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <atomic>
-#include <mutex>
+#include <BsaAlias.h>
+#include <BsaMutex.h>
 #include <vector>
 #include <math.h>
 #include <pthread.h>
@@ -58,10 +58,9 @@ private:
 	BsaTimingData     pattern_;
 	BsaTimingCallback callback_;
 	void             *userPvt_;
+	typedef BsaMutex::Guard Lock;
 
-	typedef std::unique_lock<std::mutex> Lock;
-
-	std::mutex        mtx_;
+	BsaMutex          mtx_;
 
 	EDEF              edefs_[EDEF_MAX];
 
@@ -159,7 +158,7 @@ void
 PatternTestGen::registerCallback( BsaTimingCallback cb, void *usrPvt )
 {
 	userPvt_  = usrPvt;
-	std::atomic_thread_fence( std::memory_order_seq_cst );
+	BsaAlias::atomic_thread_fence( BsaAlias::memory_order_seq_cst );
 	callback_ = cb;
 }
 

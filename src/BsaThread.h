@@ -1,7 +1,8 @@
 #ifndef BSA_THREAD_H
 #define BSA_THREAD_H
 
-#include <memory>
+#include <BsaAlias.h>
+#include <string>
 
 namespace std {
 	class thread;
@@ -9,7 +10,7 @@ namespace std {
 
 class BsaThread {
 private:
-	typedef std::unique_ptr<std::thread> Thread;
+	typedef BsaAlias::unique_ptr<std::thread> Thread;
 	Thread                       tid_;
 	void                       (*fun_)(void*);
 	std::string                  nam_;
