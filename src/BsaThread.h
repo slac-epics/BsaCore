@@ -10,7 +10,7 @@ namespace std {
 
 class BsaThread {
 private:
-	typedef BsaAlias::unique_ptr<std::thread> Thread;
+	typedef BsaAlias::shared_ptr<std::thread> Thread;
 	Thread                       tid_;
 	void                       (*fun_)(void*);
 	std::string                  nam_;

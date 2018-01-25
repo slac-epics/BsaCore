@@ -18,6 +18,11 @@ unsigned i;
 	}
 }
 
+BsaChannelImpl::~BsaChannelImpl()
+{
+	printf("Bsa Channel %s vv\n", name_.c_str());
+}
+
 const char *
 BsaChannelImpl::getName() const
 {

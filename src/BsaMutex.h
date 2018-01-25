@@ -21,23 +21,33 @@ public:
 	class Guard {
 	private:
 		BsaMutex *m_;
+		bool      a_;
 		Guard(const Guard &);
 		Guard &operator=(const Guard &);
 	public:
 		Guard(BsaMutex &m)
-		: m_( &m )
+		: m_( &m    ),
+		  a_( true  )
 		{
 			m_->lock();
 		}
 
-		pthread_mutex_t *get()
+		pthread_mutex_t *
+		get()
 		{
 			return m_->get();
 		}
 
+		void
+		release()
+		{
+			a_ = false;
+		}
+
 		~Guard()
 		{
-			m_->unlock();
+			if ( a_ )
+				m_->unlock();
 		}
 	};
 };

@@ -4,6 +4,7 @@
 #include <bsaCallbackApi.h>
 #include <BsaApi.h>
 #include <BsaTimeStamp.h>
+#include <BsaAlias.h>
 #include <BsaComp.h>
 #include <RingBufferSync.h>
 #include <PatternBuffer.h>
@@ -94,9 +95,9 @@ private:
 	unsigned long                               patternTooOld_;
 	unsigned long                               patternNotFnd_;
 
-	typedef std::unique_lock<std::mutex>        Lock;
-	std::mutex                                  mtx_;
-	std::mutex                                  omtx_;
+	typedef BsaAlias::Guard                     Lock;
+	BsaAlias::mutex                             mtx_;
+	BsaAlias::mutex                             omtx_;
 
 	bool                                        deferred_;
 
@@ -138,7 +139,7 @@ public:
 	getChid();
 
 	virtual
-	~BsaChannelImpl() {};
+	~BsaChannelImpl();
 };
 
 #endif

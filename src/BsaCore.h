@@ -40,10 +40,10 @@ private:
 	static const unsigned                   NUM_OUT_BUFS = 2;
 	static const unsigned                   IBUF_SIZE_LD = 10;
 	static const unsigned                   OBUF_SIZE_LD = 10;
-	typedef std::unique_ptr<BsaChannelImpl> BsaChannelPtr;
+	typedef BsaAlias::shared_ptr<BsaChannelImpl> BsaChannelPtr;
 	typedef std::vector<BsaChannelPtr>      BsaChannelVec;
-	typedef std::unique_ptr<BsaInpBuf>      BsaInpBufPtr;
-	typedef std::unique_ptr<BsaOutBuf>      BsaOutBufPtr;
+	typedef BsaAlias::shared_ptr<BsaInpBuf> BsaInpBufPtr;
+	typedef BsaAlias::shared_ptr<BsaOutBuf> BsaOutBufPtr;
 
 	typedef std::vector<BsaInpBufPtr>       BsaInpBufVec;
 	typedef std::vector<BsaOutBufPtr>       BsaOutBufVec;

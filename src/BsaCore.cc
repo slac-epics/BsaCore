@@ -45,6 +45,7 @@ BsaCore::~BsaCore()
 {
 	// shutdown thread before tearing any other resources down
 	stop();
+printf("BSA core v\n");
 }
 
 BsaChannel
@@ -88,7 +89,7 @@ BsaChannel found = findChannel( name );
 		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
 		           found = new BsaChannelImpl( name, chid, obuf );
-		channels_.push_back( std::unique_ptr<BsaChannelImpl>( found ) );
+		channels_.push_back( BsaChannelPtr( found ) );
 		addFinalizePop( found );
 	}
 	return found;

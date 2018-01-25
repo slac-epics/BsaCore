@@ -75,7 +75,7 @@ private:
 	PatternBuffer & operator=(const PatternBuffer&);
 
     typedef RingBuffer<PatternIdx>           IndexBuf;
-    typedef BsaAlias::unique_ptr< IndexBuf > IndexBufPtr;
+    typedef BsaAlias::shared_ptr< IndexBuf > IndexBufPtr;
 
 	std::vector<IndexBufPtr>           indexBufs_;
 	std::vector<FinalizePopCallback*>  finalizeCallbacks_;              

@@ -1,6 +1,6 @@
 #include <BsaApi.h>
 #include <BsaCore.h>
-#include <memory>
+#include <BsaAlias.h>
 
 extern "C" {
 unsigned BSA_LD_PATTERNBUF_SZ = 9;
@@ -8,11 +8,11 @@ unsigned BSA_LD_PATTERNBUF_SZ = 9;
 
 class BsaCoreWrapper {
 private:
-	std::unique_ptr<BsaCore> core_;
+	BsaAlias::shared_ptr<BsaCore> core_;
 public:
 	BsaCoreWrapper(unsigned ldBufSz, unsigned minfill)
 	{
-		core_ = std::unique_ptr<BsaCore>( new BsaCore( ldBufSz, minfill ) );
+		core_ = BsaAlias::shared_ptr<BsaCore>( new BsaCore( ldBufSz, minfill ) );
 		core_->start();
 	}
 

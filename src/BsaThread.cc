@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <thread>
 
+#define BSA_THREAD_DEBUG
 
 void BsaThread::thread_fun(BsaThread *me)
 {
@@ -20,6 +21,7 @@ BsaThread::~BsaThread()
 	printf("Destroying %s\n", nam_.c_str());
 #endif
 	stop();
+
 }
 
 void

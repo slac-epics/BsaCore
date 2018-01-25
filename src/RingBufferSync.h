@@ -2,30 +2,16 @@
 #define BSA_RING_BUFFER_SYNC_H
 
 #include <RingBuffer.h>
-
-#if __cplusplus > 199711L
-#include <condition_variable>
-#include <mutex>
-#else
-#include <BsaMutex.h>
-#include <BsaCondVar.h>
-#endif
+#include <BsaAlias.h>
 
 // Ring buffer with synchronization (producer sleeps on full,
 // consumer on empty).
 template <typename T, typename ELT = const T&>
 class RingBufferSync : public RingBuffer<T, ELT> {
-#if __cplusplus > 199711L
 protected:
-	typedef std::mutex                   Mutex;
-	typedef std::condition_variable      CondVar;
-	typedef std::unique_lock<std::mutex> Lock;
-#else
-protected:
-	typedef BsaMutex                     Mutex;
-	typedef BsaCondVar                   CondVar;
-	typedef BsaMutex::Guard              Lock;
-#endif
+	typedef BsaAlias::mutex                   Mutex;
+	typedef BsaAlias::condition_variable      CondVar;
+	typedef BsaAlias::Guard                   Lock;
 
 private:
 	unsigned                 minfill_;
