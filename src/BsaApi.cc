@@ -1,12 +1,32 @@
 #include <BsaApi.h>
 #include <BsaCore.h>
+#include <memory>
+
+extern "C" {
+unsigned BSA_LD_PATTERNBUF_SZ = 9;
+};
+
+class BsaCoreWrapper {
+private:
+	std::unique_ptr<BsaCore> core_;
+public:
+	BsaCoreWrapper(unsigned ldBufSz, unsigned minfill)
+	{
+		core_ = std::unique_ptr<BsaCore>( new BsaCore( ldBufSz, minfill ) );
+		core_->start();
+	}
+
+	BsaCore *operator()()
+	{
+		return core_.get();
+	}
+};
 
 static BsaCore *theCore()
 {
-static unsigned LD_PATTERNBUF_SZ   = 2;
-static unsigned PATTERNBUF_MINFILL = (1<<(LD_PATTERNBUF_SZ - 1));
-static BsaCore theCore_( LD_PATTERNBUF_SZ, PATTERNBUF_MINFILL );
-	return &theCore_;
+unsigned PATTERNBUF_MINFILL = (1<<(BSA_LD_PATTERNBUF_SZ - 1));
+static BsaCoreWrapper theCore_( BSA_LD_PATTERNBUF_SZ, PATTERNBUF_MINFILL );
+	return theCore_();
 }
 
 extern "C" BsaChannel

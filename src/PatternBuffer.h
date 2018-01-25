@@ -80,11 +80,14 @@ private:
 	std::vector<IndexBufPtr>           indexBufs_;
 	std::vector<FinalizePopCallback*>  finalizeCallbacks_;              
 
-protected:
-	virtual bool checkMinFilled();
+	CondVar                            frontUnused_;
 
-	virtual void finalizePush();
-	virtual void finalizePop();
+protected:
+	virtual bool frontUnused();
+
+	virtual void finalizePush(Lock*);
+	virtual void finalizePop(Lock*);
+	virtual void notifyFrontUnused();
 
 public:
 

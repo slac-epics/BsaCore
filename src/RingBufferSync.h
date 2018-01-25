@@ -2,23 +2,41 @@
 #define BSA_RING_BUFFER_SYNC_H
 
 #include <RingBuffer.h>
+
+#undef  CPP11
+#ifdef CPP11
 #include <condition_variable>
 #include <mutex>
+#else
+#include <BsaMutex.h>
+#include <BsaCondVar.h>
+#endif
 
 // Ring buffer with synchronization (producer sleeps on full,
 // consumer on empty).
 template <typename T, typename ELT = const T&>
 class RingBufferSync : public RingBuffer<T, ELT> {
+#ifdef CPP11
+protected:
+	typedef std::mutex                   Mutex;
+	typedef std::condition_variable      CondVar;
+	typedef std::unique_lock<std::mutex> Lock;
+#else
+protected:
+	typedef BsaMutex                     Mutex;
+	typedef BsaCondVar                   CondVar;
+	typedef BsaMutex::Guard              Lock;
+#endif
+
 private:
 	unsigned                 minfill_;
-	std::mutex               mtx_;
-	std::condition_variable  minfilled_;
-	std::condition_variable  not_full_;
+	Mutex                    mtx_;
+	CondVar                  minfilled_;
+	CondVar                  not_full_;
 
 protected:
-	typedef std::unique_lock<std::mutex> Lock;
 
-	std::mutex               & getMtx()
+	Mutex                    & getMtx()
 	{
 		return mtx_;
 	}
@@ -39,33 +57,36 @@ protected:
 		return RingBuffer<T,ELT>::size() > minfill_ ;
 	}
 
-	virtual void finalizePush()
+	virtual void finalizePush(Lock *lp)
 	{
 	}
 
-	virtual void finalizePop()
+	virtual void finalizePop(Lock *lp)
 	{
 	}
 
 	bool wait(T *pv, bool doBlock, bool doPop)
 	{
-	std::unique_lock<std::mutex> l( mtx_ );
-		if ( doBlock ) {
-			while ( ! checkMinFilled() ) {
-				minfilled_.wait( l );
+		{
+		Lock l( mtx_ );
+			if ( doBlock ) {
+				while ( ! checkMinFilled() ) {
+					minfilled_.wait( l );
+				}
+			} else {
+				if ( ! checkMinFilled() ) {
+					return false;
+				}
 			}
-		} else {
-			if ( ! checkMinFilled() ) {
-				return false;
+			if ( pv ) {
+				*pv = RingBuffer<T,ELT>::front();
 			}
-		}
-		if ( pv ) {
-			*pv = RingBuffer<T,ELT>::front();
+			if ( doPop ) {
+				finalizePop( &l );
+				RingBuffer<T,ELT>::pop();
+			}
 		}
 		if ( doPop ) {
-			finalizePop();
-			RingBuffer<T,ELT>::pop();
-			l.unlock();
 			notifyNotFull();
 		}
 		return true;
@@ -78,29 +99,30 @@ public:
 	  minfill_     ( minfill )
 	{
 		if ( minfill >= (unsigned)(1<<ldSz) ) {
-			throw std::runtime_error("Requested minfill too big");
+			throw std::runtime_error( std::string("Requested minfill too big") );
 		}
 	}
 
 	bool push_back(ELT v, bool doBlock = true)
 	{
-	std::unique_lock<std::mutex> l( mtx_ );
-	bool                         doNotify;
-		if ( doBlock ) {
-			while ( RingBuffer<T,ELT>::full() ) {
-				not_full_.wait( l );
+	bool doNotify;
+		{
+		Lock l( mtx_ );
+			if ( doBlock ) {
+				while ( RingBuffer<T,ELT>::full() ) {
+					not_full_.wait( l );
+				}
+			} else {
+				if ( RingBuffer<T,ELT>::full() ) {
+					return false;
+				}
 			}
-		} else {
-			if ( RingBuffer<T,ELT>::full() ) {
-				return false;
-			}
+			RingBuffer<T,ELT>::push_back( v );
+
+			finalizePush( &l );
+
+			doNotify = checkMinFilled();
 		}
-		RingBuffer<T,ELT>::push_back( v );
-
-		finalizePush();
-
-		doNotify = checkMinFilled();
-		l.unlock();
 		if ( doNotify )
 			notifyMinFilled();
 		return true;
@@ -108,7 +130,7 @@ public:
 
 	void wait()
 	{
-	std::unique_lock<std::mutex> l( mtx_ );
+	Lock l( mtx_ );
 		while ( ! checkMinFilled() ) {
 			minfilled_.wait( l );
 		}
@@ -126,25 +148,26 @@ public:
 
 	void pop()
 	{
-	std::unique_lock<std::mutex> l( mtx_ );
-		while ( ! checkMinFilled() ) {
-			minfilled_.wait( l );
+		{
+		Lock l( mtx_ );
+			while ( ! checkMinFilled() ) {
+				minfilled_.wait( l );
+			}
+			finalizePop( &l );
+			RingBuffer<T,ELT>::pop();
 		}
-		finalizePop();
-		RingBuffer<T,ELT>::pop();
-		l.unlock();
 		notifyNotFull();
 	}
 
 	void
 	lockedWork( void (*fn)(RingBufferSync<T,ELT> *me, void *closure), void *closure )
 	{
-	std::unique_lock<std::mutex> l( mtx_ );
+	Lock l( mtx_ );
 		fn( this, closure );
 	}
 
 	virtual void
-	process(T *pitem)
+	processItem(T *pitem)
 	{
 	}
 
@@ -155,7 +178,7 @@ public:
 
 		T &item( RingBuffer<T,ELT>::front() );
 
-		process( &item );
+		processItem( &item );
 
 		pop();
 	}

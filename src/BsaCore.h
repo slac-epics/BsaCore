@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <memory>
+#include <BsaThread.h>
 #include <BsaChannel.h>
 #include <RingBufferSync.h>
 
@@ -10,26 +11,30 @@ class BsaCore;
 
 class BsaChannelNotFound {};
 
-class BsaInpBuf : public RingBufferSync<BsaDatum> {
+template <typename T> class BsaBuf : public BsaThread, public RingBufferSync<T> {
 private:
 	BsaCore     *pcore_;
-public:
-	BsaInpBuf(BsaCore *pcore, unsigned ldSz);
 
-	virtual void process(BsaDatum *pitem);
+public:
+	BsaBuf(BsaCore *pcore, unsigned ldSz, const char *name)
+	: BsaThread        ( name  ),
+	  RingBufferSync<T>( ldSz  ),
+      pcore_           ( pcore )
+	{
+	}
+
+	~BsaBuf();
+
+	virtual void run();
+
+	virtual void processItem(T *pitem);
 };
 
-class BsaOutBuf : public RingBufferSync<BsaResultItem> {
-private:
-	BsaCore     *pcore_;
-public:
-	BsaOutBuf(BsaCore *pcore, unsigned ldSz);
+typedef BsaBuf<BsaDatum>      BsaInpBuf;
 
-	virtual void process(BsaResultItem *pitem);
-};
+typedef BsaBuf<BsaResultItem> BsaOutBuf;
 
-
-class BsaCore {
+class BsaCore : public BsaThread, public PatternBuffer {
 private:
 	static const unsigned                   NUM_INP_BUFS = 2;
 	static const unsigned                   NUM_OUT_BUFS = 2;
@@ -39,11 +44,11 @@ private:
 	typedef std::vector<BsaChannelPtr>      BsaChannelVec;
 	typedef std::unique_ptr<BsaInpBuf>      BsaInpBufPtr;
 	typedef std::unique_ptr<BsaOutBuf>      BsaOutBufPtr;
+
 	typedef std::vector<BsaInpBufPtr>       BsaInpBufVec;
 	typedef std::vector<BsaOutBufPtr>       BsaOutBufVec;
 
 	BsaChannelVec                           channels_;
-	PatternBuffer                           pbuf_;
 
 	BsaInpBufVec                            inpBufs_;
 	BsaOutBufVec                            outBufs_;
@@ -53,10 +58,15 @@ private:
 
 public:
 	BsaCore(unsigned pbufLdSz, unsigned pbufMinFill);
+	~BsaCore();
 	BsaChannel createChannel(const char *name);
 	BsaChannel findChannel(const char *name);
 
-	void       evictOldestPattern();
+	virtual
+	void       run();
+
+	virtual
+	void       processItem(BsaPattern*);
 
 	void
 	processInput(BsaDatum *);
@@ -70,8 +80,5 @@ public:
 	BsaChannel findChannel(BsaChid chid);
 
 	void       pushTimingData(const BsaTimingData *pattern);
-
-	// thread function
-	static void evictOldestPatternLoop(void *arg);
 };
 #endif

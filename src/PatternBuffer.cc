@@ -19,9 +19,9 @@ unsigned i;
 }
 
 bool
-PatternBuffer::checkMinFilled()
+PatternBuffer::frontUnused()
 {
-	return RingBufferSync<BsaPattern, const BsaTimingData*>::checkMinFilled() && front().getRef() == 0;
+	return front().getRef() == 0;
 }
 
 BsaPattern *
@@ -65,17 +65,26 @@ PatternBuffer::patternGet(BsaPattern *p)
 }
 
 void
+PatternBuffer::notifyFrontUnused()
+{
+	frontUnused_.notify_one();
+}
+
+void
 PatternBuffer::patternPut(BsaPattern *p)
 {
-Lock lg( getMtx() );
-	if ( 0 == p->decRef() && p == &front() && checkMinFilled() ) {
-		lg.unlock();
-		notifyMinFilled();
+bool doNotify;
+	{
+	Lock lg( getMtx() );
+		doNotify = ( 0 == p->decRef() && p == &front() );
+	}
+	if ( doNotify ) {
+		notifyFrontUnused();
 	}
 }
 
 void
-PatternBuffer::finalizePush()
+PatternBuffer::finalizePush(Lock *lp)
 {
 BsaPattern &pat( back() );
 unsigned    i;
@@ -94,12 +103,23 @@ PatternIdx  t = tail();
 }
 
 void
-PatternBuffer::finalizePop()
+PatternBuffer::finalizePop(Lock *lp)
 {
-BsaPattern &pat( back() );
+BsaPattern &pat( front() );
 unsigned    i;
 uint64_t    anyMask = pat.edefInitMask | pat.edefActiveMask;
 uint64_t    m;
+
+#ifdef PBUF_DEBUG
+printf("finalizePop -- enter\n");
+#endif
+
+	while ( ! frontUnused() ) {
+#ifdef PBUF_DEBUG
+printf("finalizePop -- waiting\n");
+#endif
+		frontUnused_.wait( *lp ); 
+	}
 
 std::vector<FinalizePopCallback*>::iterator it;
 
@@ -118,6 +138,7 @@ std::vector<FinalizePopCallback*>::iterator it;
 void
 PatternBuffer::addFinalizePop(FinalizePopCallback *cb)
 {
+Lock lg( getMtx() );
 	finalizeCallbacks_.push_back( cb );
 }
 
@@ -129,7 +150,9 @@ Lock lg( getMtx() );
 	if ( ! pat || ! ( (pat->edefInitMask | pat->edefActiveMask) & (1<<edef)) )
 		return 0;
 
+#ifdef PBUF_DEBUG
 printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->head());
+#endif
 
 	unsigned idx = pat->seqIdx_[edef] - indexBufs_[edef]->head() + 1;
 
@@ -137,7 +160,9 @@ printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->h
 		// no newer active pattern available
 		return 0;
 	}
+#ifdef PBUF_DEBUG
 printf("indexBufs[%d], %d, pattern buf head %d\n", idx, (*indexBufs_[edef])[idx], head());
+#endif
 	BsaPattern *rval = & (*this)[ (*indexBufs_[edef])[idx] - head() ];
 	rval->incRef();
 	return rval;
@@ -165,7 +190,20 @@ uint64_t anyMask = pat->edefInitMask | pat->edefActiveMask;
 		return;
 	}
 
+#ifdef PBUF_DEBUG
+	{
+	Lock lg( getMtx() );
+		printf("      pushing pattern (pid %llu, front %llu)\n", (unsigned long long)pat->pulseId, (unsigned long long)front().pulseId);
+	}
+#endif
+
 	if ( ! RingBufferSync<BsaPattern, const BsaTimingData*>::push_back( pat , false ) ) {
+#ifdef PBUF_DEBUG
+		Lock lg( getMtx() );
+		printf("Buffer overrun\n");
+		printf("Front PID    %llu\n", (unsigned long long)front().pulseId);
+		printf("Front refcnt %u\n",   front().getRef());
+#endif
 		throw std::runtime_error("Pattern buffer overrun");
 	}
 }

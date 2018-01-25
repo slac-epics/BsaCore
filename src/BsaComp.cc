@@ -13,13 +13,13 @@ BsaComp::resetAvg()
 	val_.numSamples_  = 0;
 	val_.maxSevr_     = 0;
 	val_.maxSevrStat_ = 0;
+	val_.missing_     = 0;
 }
 
 void
 BsaComp::reset(BsaTimeStamp initTime)
 {
 	initTs_           = initTime;	
-	val_.missing_     = 0;
 	resetAvg();
 }
 

@@ -169,8 +169,8 @@ BSA_StoreData(
 struct BsaResultStruct {
 	double         avg;
 	double         rms;
-	int            count;
-	int            missed; // # of pulses with active EDEF but no data was received
+	unsigned long  count;
+	unsigned long  missed; // # of pulses with active EDEF but no data was received
 	epicsTimeStamp timeStamp;
 	BsaPulseId     pulseId;
 	BsaStat        stat;

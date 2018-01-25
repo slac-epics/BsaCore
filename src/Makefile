@@ -14,6 +14,9 @@ PROD_IOC += SyncBufTest
 
 # Compile and add the code to the support library
 BsaCore_SRCS += BsaComp.cc
+BsaCore_SRCS += BsaThread.cc
+BsaCore_SRCS += BsaMutex.cc
+BsaCore_SRCS += BsaCondVar.cc
 BsaCore_SRCS += PatternBuffer.cc
 BsaCore_SRCS += BsaChannel.cc
 BsaCore_SRCS += BsaCore.cc

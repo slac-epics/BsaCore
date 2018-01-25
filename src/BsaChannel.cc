@@ -2,6 +2,8 @@
 #include <stdexcept>
 #include <math.h>
 
+#undef BSA_CHANNEL_DEBUG
+
 BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultItem> *obuf)
 : outBuf_   ( obuf         ),
   inUseMask_( 0            ),
@@ -44,18 +46,30 @@ uint64_t msk, act;
 
 	act = pattern->edefActiveMask | pattern->edefInitMask;
 
+#ifdef BSA_CHANNEL_DEBUG
 printf("evict -- enter \n");
+#endif
 	Lock lg( mtx_ );
+#ifdef BSA_CHANNEL_DEBUG
+printf("      -- locked\n");
+#endif
 
 	for ( edef = 0, msk = 1;  act; edef++, (act &= ~msk), msk <<= 1 ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("Evicting edef %d (act %llu, msk %llu)\n", edef, (unsigned long long)act, (unsigned long long)msk);
+#endif
 		if ( pattern == slots_[edef].pattern_ ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("evict -- found pattern\n");
+#endif
 			// The pattern associated with the last computation done for this edef
 			// is about to expire. The computation has been done, so there are no
 			// lost data at this point but we must release the 'pattern_'.
 			slots_[edef].pattern_ = 0;
 			pbuf->patternPut( pattern );
+#ifdef BSA_CHANNEL_DEBUG
+printf("evict -- pattern put\n");
+#endif
 			// Keep the this slot locked until the pattern is truly gone so
 			// that 'processInput()' cannot find this pattern anymore.
 			// The 'PatternBuffer' waits for all references to the oldest pattern
@@ -66,13 +80,17 @@ printf("evict -- found pattern\n");
 			// 'pattern_ == 0' condition.
 			deferred_ = true;
 		} else if ( ! slots_[edef].pattern_ ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("evict -- no pattern\n");
+#endif
 			// the last computation on this slot was done in the past. We must
 			// examine this pattern and account for it before we can evict it
 			process( edef, pattern, 0 );
 		} // else: nothing to do; the computation is up-to-date (= more recent than this pattern)
           //       and everything up to slots_[edef].pattern_ has been accounted for already
+#ifdef BSA_CHANNEL_DEBUG
 else printf("evict -- newer pattern\n");
+#endif
 	}
 
 	if ( deferred_ )
@@ -85,17 +103,23 @@ BsaChannelImpl::process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item)
 uint64_t msk = (1ULL<<edef);
 BsaSevr  edefSevr;
 
+#ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d)\n", edef);
+#endif
 
 	if ( pattern->edefInitMask & msk ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
+#endif
 		slots_[edef].comp_.reset( pattern->timeStamp );
 		slots_[edef].seq_ = 0;
 	}
 
 	if ( pattern->edefActiveMask & msk ) {
 		if ( item ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
+#endif
 			if ( pattern->edefMinorMask & msk ) {
 				edefSevr = SEVR_MIN;
 			} else if ( pattern->edefMajorMask & msk ) {
@@ -109,13 +133,17 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
 				slots_[edef].pulseId_ = pattern->pulseId;
 			}
 		} else {
+#ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
+#endif
 			slots_[edef].comp_.miss();
 		}
 	}
 
 	if ( pattern->edefAvgDoneMask & msk ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
+#endif
 		unsigned long n = slots_[edef].comp_.getNum();
 		outBuf_->push_back(
 			BsaResultItem(
@@ -123,7 +151,7 @@ printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
 				edef,
 				slots_[edef].seq_,
 				slots_[edef].comp_.getMean(),
-				::sqrt(slots_[edef].comp_.getSumSquares())/(double)n,
+				::sqrt(slots_[edef].comp_.getPopVar()),
 				n,
 				slots_[edef].comp_.getMissing(),
 				slots_[edef].comp_.getTimeStamp(),
@@ -150,18 +178,24 @@ BsaEdef     i;
 
 		pattern = pbuf->patternGet( pitem->timeStamp );
 
+#ifdef BSA_CHANNEL_DEBUG
 printf("ChannelImpl::processInput -- got item (pulse id %llu)\n", (unsigned long long) pattern->pulseId);
+#endif
 
 		act = pattern->edefActiveMask;
 
 		for ( i = 0, msk = 1;  act; i++, (act &= ~msk), msk <<= 1 ) {
 			if ( ! (msk & act) ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("processInput(%d) -- not active\n",i);
+#endif
 				continue;
 			}
 
 			if ( slots_[i].comp_.getTimeStamp() == pitem->timeStamp ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("processInput(%d) -- no change\n",i);
+#endif
 				slots_[i].noChangeCnt_++;
 				continue;
 			}
@@ -172,11 +206,17 @@ printf("processInput(%d) -- no change\n",i);
 
 			// tmpPattern still holds a reference count
 			if ( tmpPattern ) {
+#ifdef BSA_CHANNEL_DEBUG
+printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pulseId);
+#endif
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
 				// release this slot's pattern; it will be updated with
 				// the current one.
 				pbuf->patternPut( tmpPattern );
 			} else {
+#ifdef BSA_CHANNEL_DEBUG
+printf("processInput(%d) -- found no slot pattern\n", i);
+#endif
 				// pattern of last computation has expired
 				prevPattern = pbuf->patternGetOldest( i );
 			}
@@ -186,18 +226,16 @@ printf("processInput(%d) -- no change\n",i);
 				throw std::runtime_error("no previous pattern found");
 			}
 
-int dbg = 0;
 
 			while ( prevPattern != pattern ) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i, (unsigned long long)prevPattern->pulseId, (unsigned long long)pattern->pulseId);
-if ( ++dbg == 8 )
-	throw std::runtime_error("XX");
+#endif
 
 				process( i, prevPattern, 0 );
 
 				tmpPattern = prevPattern;
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
-printf("Tmp REF: %d\n", tmpPattern->getRef());
 				pbuf->patternPut( tmpPattern );
 
 				if ( ! prevPattern ) {
@@ -213,13 +251,19 @@ printf("Tmp REF: %d\n", tmpPattern->getRef());
 
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("ProcessInput: pattern too new (%llu)\n", (unsigned long long)pitem->timeStamp);
+#endif
 		patternTooNew_++;
 	} catch (PatternExpired &e) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("ProcessInput: pattern too old (%llu)\n", (unsigned long long)pitem->timeStamp);
+#endif
 		patternTooOld_++;
 	} catch (PatternNotFound &e) {
+#ifdef BSA_CHANNEL_DEBUG
 printf("ProcessInput: pattern not fnd (%llu)\n", (unsigned long long)pitem->timeStamp);
+#endif
 		patternNotFnd_++;
 	}
 }
@@ -251,6 +295,7 @@ uint64_t  m = (1ULL<<edef);
 		return -1;
 	}
 
+	slots_[edef].usrPvt_    = closure;
 	slots_[edef].callbacks_ = *sink;
 
 	inUseMask_ |= m;
