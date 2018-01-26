@@ -4,7 +4,7 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS BELOW HERE
 
-#USR_CXXFLAGS += -std=c++11
+USR_CXXFLAGS += -std=c++11
 
 # Build an IOC support library
 LIBRARY_IOC += BsaCore
@@ -14,7 +14,7 @@ PROD_IOC += SyncBufTest
 
 # Compile and add the code to the support library
 BsaCore_SRCS += BsaComp.cc
-#BsaCore_SRCS += BsaThread.cc
+BsaCore_SRCS += BsaThread.cc
 BsaCore_SRCS += BsaMutex.cc
 BsaCore_SRCS += BsaCondVar.cc
 BsaCore_SRCS += PatternBuffer.cc

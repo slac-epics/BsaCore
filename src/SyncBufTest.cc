@@ -1,5 +1,6 @@
 #include <RingBufferSync.h>
 #include <stdexcept>
+#include <stdio.h>
 
 typedef RingBufferSync<int> RBS;
 
