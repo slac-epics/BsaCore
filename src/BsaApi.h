@@ -240,8 +240,11 @@ BSA_DelSimpleSink(
 	void             *closure
 );
 
-int
-BSA_TimingCallbackRegister();
+/*
+ * Obtain the timing callback function provided by BSA
+ */
+extern "C" int
+BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*));
 
 #ifdef __cplusplus
 }

@@ -110,13 +110,13 @@ BsaCore *theCore = (BsaCore*)pUserPvt;
 }
 
 extern "C" BsaTimingCallback
-bsaTimingCallback()
+BSA_TimingCallbackGet()
 {
 	return theBsaTimingCallback;
 }
 
 extern "C" int
-BSA_TimingCallbackRegister()
+BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*))
 {
-	return RegisterBsaTimingCallback( bsaTimingCallback(), theCore() );
+	return registrar( BSA_TimingCallbackGet(), theCore() );
 }

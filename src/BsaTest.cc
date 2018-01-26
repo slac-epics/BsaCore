@@ -315,7 +315,7 @@ BsaChannel ch = BSA_CreateChannel("CH1");
 		theGen()->setEdef( edefs[i], EDEF_0 + i );
 	}
 
-	BSA_TimingCallbackRegister();
+	BSA_TimingCallbackRegister(RegisterBsaTimingCallback);
 
 	theGen()->start();
 
