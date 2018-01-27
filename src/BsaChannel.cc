@@ -1,6 +1,7 @@
 #include <BsaChannel.h>
 #include <stdexcept>
 #include <math.h>
+#include <stdint.h>
 
 #undef BSA_CHANNEL_DEBUG
 
@@ -9,6 +10,18 @@ BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
 {
 	return BsaResultPtr( BsaPoolAllocator<BsaResultItem>::make(chid, edef) );
 }
+
+void
+BsaResultItem::release(BsaResult r)
+{
+uintptr_t resultsField = reinterpret_cast<uintptr_t>( r );
+uintptr_t resultsOff   = reinterpret_cast<uintptr_t>( &static_cast<BsaResultItem*>(0)->results_[0] );
+
+BsaResultItem *basePtr = reinterpret_cast<BsaResultItem*>(resultsField - resultsOff);
+
+	basePtr->self_.reset();
+}
+
 
 BsaSlot::BsaSlot(BsaChid chid, BsaEdef edef)
 : pattern_   ( 0                                  ),
@@ -323,6 +336,9 @@ BsaSlot     &slot( slots_[buf->edef_] );
 		if ( buf->isIni_ ) {
 			slot.callbacks_.OnInit( this, slot.usrPvt_ );
 		}
+		// since we pass the buffer to C code we must keep a shared_ptr reference.
+		// We do that simply by storing a shared_ptr in the result itself.
+		buf->self_ = buf;
 		slot.callbacks_.OnResult( this, &buf->results_[0], buf->numResults_, slot.usrPvt_ );
 	}
 }

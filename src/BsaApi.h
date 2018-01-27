@@ -179,6 +179,22 @@ struct BsaResultStruct {
 
 typedef const struct BsaResultStruct *BsaResult;
 
+/*
+ * Release a result or an array of results; the
+ * user may have their own queues to store results.
+ * When done, the result must be released.
+ *
+ * Notes: Results are read-only and could be shared
+ *        by multiple sinks.
+ *
+ *        An array of results is only released once
+ *        (the individual members are not released)
+ */
+void
+BSA_ReleaseResults(
+	BsaResult results
+);
+
 struct BsaSimpleDataSinkStruct {
 	/* called when a new BSA starts */
 	void (*OnInit)(

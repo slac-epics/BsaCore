@@ -120,3 +120,11 @@ BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*))
 {
 	return registrar( BSA_TimingCallbackGet(), theCore() );
 }
+
+extern "C" void
+BSA_ReleaseResults(
+	BsaResult results
+)
+{
+	BsaResultItem::release( results );
+}

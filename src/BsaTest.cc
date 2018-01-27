@@ -272,6 +272,8 @@ unsigned long long v = results[0].pulseId;
 		printf("%ld results tested; SUCCESS\n", tested);
 		theGen()->kill();
 	}
+
+	BSA_ReleaseResults( results );
 }
 
 static void edefAbort(BsaChannel ch, int status, void *closure)

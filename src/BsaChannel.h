@@ -53,6 +53,9 @@ typedef struct BsaResultItem {
 	{
 	}
 
+	// release the 'self_' reference (for use from C code!)
+	static void         release(BsaResult);
+
 	static BsaResultPtr alloc( BsaChid chid, BsaEdef edef );
 } BsaResultItem;
 
