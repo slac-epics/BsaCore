@@ -23,6 +23,13 @@ public:
 	{
 	}
 
+	BsaBuf(BsaCore *pcore, unsigned ldSz, const char *name, const T &ini)
+	: BsaThread        ( name      ),
+	  RingBufferSync<T>( ldSz, ini ),
+      pcore_           ( pcore     )
+	{
+	}
+
 	~BsaBuf();
 
 	virtual void run();

@@ -88,6 +88,17 @@ public:
 		}
 	}
 
+	// minfill: the number of elements that must always remain in the buffer
+	RingBufferSync(unsigned ldSz, const ELT &ini, unsigned minfill = 0)
+	: RingBuffer<T,ELT>( ldSz, ini ),
+	  minfill_         ( minfill   )
+	{
+		if ( minfill >= (unsigned)(1<<ldSz) ) {
+			throw std::runtime_error( std::string("Requested minfill too big") );
+		}
+	}
+
+
 	bool push_back(ELT v, bool doBlock = true)
 	{
 	bool doNotify;

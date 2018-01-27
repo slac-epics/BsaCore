@@ -17,6 +17,9 @@ private:
 	unsigned       m_;
 
 	RingBuffer & operator=(const RingBuffer&);
+	RingBuffer(const RingBuffer &orig);
+
+	static const unsigned MAX_LD_SZ = 16;
 public:
 	typedef T        value_type;
 	typedef T       &reference;
@@ -28,21 +31,23 @@ public:
 	  t_(0),
 	  m_((1<<ldSz)-1)
 	{
-		if ( ldSz > 16 )
+		if ( ldSz > MAX_LD_SZ )
 			throw std::range_error("RingBuffer: requested size too large");
 		buf_.reserve((1<<ldSz));
 	}
 
-	RingBuffer(const RingBuffer &orig)
-	: buf_(orig.buf_),
-	  h_  (orig.h_  ),
-	  t_  (orig.t_  ),
-	  m_  (orig.m_  )
+	// E.g., a ring-buffer of shared_ptr must be
+	// initialized with empty (but valid) elements
+	RingBuffer(unsigned ldSz, const ELT &ini)
+	: h_(0),
+	  t_(0),
+	  m_((1<<ldSz)-1)
 	{
 	unsigned i;
-		buf_.reserve( orig.buf_.capacity() );
-		for ( i = h_; i != t_; i++ ) {
-			buf_[ i & m_ ] = orig.buf_[ i & m_ ];
+		if ( ldSz > MAX_LD_SZ )
+			throw std::range_error("RingBuffer: requested size too large");
+		for ( i = 0; i < (unsigned)(1<<ldSz); i++ ) {
+			buf_.push_back( ini );
 		}
 	}
 
