@@ -4,29 +4,21 @@
 #include <BsaApi.h>
 #include <BsaTimeStamp.h>
 
-typedef struct BsaVal {
-	BsaTimeStamp  lastTs_;
-	double        sum2_;
-	double        mean_;
-	unsigned long numSamples_;
-	unsigned long missing_;
-	BsaSevr       maxSevr_;
-	BsaStat       maxSevrStat_;
-} BsaVal;
-
 class BsaComp {
 private:
+	typedef BsaResultStruct *ResPtr;
+
 	BsaTimeStamp  initTs_;
-	BsaVal        val_;
+	ResPtr        current_;
 
 public:
-	BsaComp();
+	BsaComp(ResPtr);
 
-	void          reset(BsaTimeStamp ts);
+	void          reset(BsaTimeStamp ts, ResPtr r);
 
-	void          resetAvg();
+	void          resetAvg(ResPtr r);
 
-	void          addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat);
+	void          addData(double x, BsaTimeStamp ts, BsaPulseId, BsaSevr sevr, BsaStat stat);
 
 	void          miss();
 
@@ -36,7 +28,7 @@ public:
 	// population variance
 	double        getPopVar()      const;
 
-	const BsaVal &getVal()         const;
+	BsaResult     getVal()         const;
 
 	BsaTimeStamp  getTimeStamp()   const;
 

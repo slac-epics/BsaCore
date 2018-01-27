@@ -1,67 +1,78 @@
 #include <BsaComp.h>
+#include <math.h>
 
-BsaComp::BsaComp()
+BsaComp::BsaComp(ResPtr newBuf)
 {
-	val_.numSamples_ = 0;
+	current_        = newBuf;
+	current_->count = 0;
 }
 
 void
-BsaComp::resetAvg()
+BsaComp::resetAvg(ResPtr newBuf)
 {
-	val_.sum2_        = 0.0;
-	val_.mean_        = 0.0;
-	val_.numSamples_  = 0;
-	val_.maxSevr_     = 0;
-	val_.maxSevrStat_ = 0;
-	val_.missing_     = 0;
+	if ( current_->count > 1 ) {
+		current_->rms = ::sqrt( current_->rms/(double)current_->count );
+	} else if ( current_->count == 0 ) {
+		current_->avg = 0./0.;
+	}
+	if ( newBuf ) {
+		current_ = newBuf;
+	}
+
+	current_->rms        = 0.0;
+	current_->avg        = 0.0;
+	current_->count      = 0;
+	current_->sevr       = 0;
+	current_->stat       = 0;
+	current_->missed     = 0;
 }
 
 void
-BsaComp::reset(BsaTimeStamp initTime)
+BsaComp::reset(BsaTimeStamp initTime, ResPtr newBuf)
 {
 	initTs_           = initTime;	
-	resetAvg();
+	resetAvg( newBuf );
 }
 
 void
 BsaComp::miss()
 {
-	val_.missing_++;
+	current_->missed++;
 }
 
 unsigned long
 BsaComp::getMissing() const
 {
-	return val_.missing_;
+	return current_->missed;
 };
 
 BsaTimeStamp
 BsaComp::getTimeStamp()   const
 {
-	return val_.lastTs_;
+	return current_->timeStamp;
 }
 
 BsaSevr
 BsaComp::getMaxSevr()     const
 {
-	return val_.maxSevr_;
+	return current_->sevr;
 }
 
 BsaStat
 BsaComp::getMaxSevrStat() const
 {
-	return val_.maxSevrStat_;
+	return current_->stat;
 }
 
-const BsaVal &
+BsaResult
 BsaComp::getVal() const
 {
-	return val_;
+	return current_;
 }
 
 
 void
-BsaComp::addData(double x, BsaTimeStamp ts, BsaSevr sevr, BsaStat stat)
+BsaComp::addData(double x, BsaTimeStamp ts, BsaPulseId pid, BsaSevr sevr, BsaStat stat)
 {
 double d1,d2;
 
@@ -104,41 +115,17 @@ double d1,d2;
 	 * (published by B.P. Welford, 1962)
 	 */
 
-	val_.lastTs_    = ts;
+	current_->timeStamp  = ts;
+	current_->pulseId    = pid;
 
-	val_.numSamples_++;
-	d1              = x - val_.mean_;
-	val_.mean_     += d1 / (double)val_.numSamples_;  
-	d2              = x - val_.mean_;
-	val_.sum2_     += d1 * d2;
+	current_->count++;
+	d1              = x - current_->avg;
+	current_->avg       += d1 / (double)current_->count;  
+	d2              = x - current_->avg;
+	current_->rms       += d1 * d2;
 
-	if ( sevr > val_.maxSevr_ ) {
-		val_.maxSevr_     = sevr;
-		val_.maxSevrStat_ = stat;
+	if ( sevr > current_->sevr     ) {
+		current_->sevr         = sevr;
+		current_->stat         = stat;
 	}
-}
-
-unsigned long
-BsaComp::getNum() const
-{
-	return val_.numSamples_;
-}
-
-double
-BsaComp::getMean() const
-{
-	return getNum() ? val_.mean_ : 0./0.;
-}
-
-double
-BsaComp::getSumSquares() const
-{
-	return val_.sum2_;
-}
-
-double
-BsaComp::getPopVar() const
-{
-	// returns NAN if sum2_ == n_ == 0
-	return val_.sum2_/(double)val_.numSamples_;
 }

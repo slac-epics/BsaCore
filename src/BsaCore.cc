@@ -13,7 +13,7 @@ BsaInpBuf::processItem(BsaDatum *pitem)
 
 template<>
 void
-BsaOutBuf::processItem(BsaResultItem *pitem)
+BsaOutBuf::processItem(BsaResultPtr *pitem)
 {
 	pcore_->processOutput( pitem );
 }
@@ -84,7 +84,7 @@ BsaChannel found = findChannel( name );
 		if ( (unsigned)chid < NUM_OUT_BUFS ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "OBUF%d", chid);
-			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD, nam ) ) );
+			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD, nam, BsaResultPtr() ) ) );
 			outBufs_[chid]->start();
 		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
@@ -138,7 +138,8 @@ BsaCore::processInput(BsaDatum *pitem)
 }
 
 void
-BsaCore::processOutput(BsaResultItem *pitem)
+BsaCore::processOutput(BsaResultPtr *pitem)
 {
-	channels_[ pitem->chid_ ]->processOutput( pitem );
+BsaChid chid = (*pitem)->chid_;
+	channels_[chid]->processOutput( pitem );
 }

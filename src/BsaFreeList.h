@@ -2,6 +2,7 @@
 #define BSA_FREE_LIST_H
 
 #include <BsaAlias.h>
+#include <stdio.h>
 
 template <std::size_t BLKSZ>
 class BsaFreeList {
@@ -23,9 +24,11 @@ private:
 	BsaFreeList(const BsaFreeList&);
 	BsaFreeList &operator=(const BsaFreeList&);
 
+	static const std::size_t MAX_UNLIMITED = -1;
+
 public:
-	BsaFreeList(std::size_t maxBlks = 1000)
-	: numBlks_( maxBlks ),
+	BsaFreeList(std::size_t maxBlks = MAX_UNLIMITED)
+	: numBlks_(       0 ),
 	  maxBlks_( maxBlks ),
 	  lstHead_(    NULL )
 	{
@@ -40,7 +43,7 @@ public:
 		if ( lstHead_ ) {
 			return pluck();
 		}
-		if ( numBlks_ == 0 ) {
+		if ( numBlks_ == maxBlks_ ) {
 			throw std::bad_alloc();
 		}
 
@@ -48,7 +51,7 @@ public:
 
 		rval = ::operator new ( BLKSZ );
 
-		numBlks_--;
+		numBlks_++;
 		return rval;
 	}
 
@@ -62,10 +65,10 @@ public:
 	~BsaFreeList()
 	{
 	BsaAlias::Guard lg( lstMutx_ );
+		printf("BsaFreeList had accumulated %ld items\n", (long)numBlks_);
 		while ( lstHead_ ) {
 			::operator delete( pluck() );
 		}
-	
 	}
 
 	// all allocations of the same size use the same pool

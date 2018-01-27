@@ -39,7 +39,7 @@ public:
 
 typedef BsaBuf<BsaDatum>      BsaInpBuf;
 
-typedef BsaBuf<BsaResultItem> BsaOutBuf;
+typedef BsaBuf<BsaResultPtr>  BsaOutBuf;
 
 class BsaCore : public BsaThread, public PatternBuffer {
 private:
@@ -79,7 +79,7 @@ public:
 	processInput(BsaDatum *);
 
 	void
-	processOutput(BsaResultItem *);
+	processOutput(BsaResultPtr *);
 
 	int
 	storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);

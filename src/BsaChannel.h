@@ -8,7 +8,10 @@
 #include <BsaComp.h>
 #include <RingBufferSync.h>
 #include <PatternBuffer.h>
+#include <BsaFreeList.h>
 #include <stdint.h>
+
+#define BSA_RESULTS_MAX 1
 
 typedef signed char BsaChid;
 
@@ -29,53 +32,42 @@ typedef struct BsaDatum {
 	}
 } BsaDatum;
 
+struct BsaResultItem;
+typedef BsaAlias::shared_ptr<BsaResultItem> BsaResultPtr;
+
 typedef struct BsaResultItem {
+	BsaResultPtr            self_;
 	BsaChid                 chid_;
 	BsaEdef                 edef_;
-	unsigned                seq_;
-	struct BsaResultStruct  result_;
+	bool                    isIni_;
+	unsigned                numResults_;
+	struct BsaResultStruct  results_[BSA_RESULTS_MAX];
 
 	BsaResultItem(
 		BsaChid        chid,
-		BsaEdef        edef,
-		unsigned       seq,
-		double         avg,
-		double         rms,
-		unsigned long  count,
-		unsigned long  missed, // # of pulses with active EDEF but no data was received
-		epicsTimeStamp timeStamp,
-		BsaPulseId     pulseId,
-		BsaStat        stat,
-		BsaSevr        sevr)
+		BsaEdef        edef)
+	: chid_      ( chid  ),
+	  edef_      ( edef  ),
+	  isIni_     ( false ),
+	  numResults_(    0  )
 	{
-		chid_             = chid;
-		edef_             = edef;
-		seq_              = seq;
-		result_.avg       = avg;
-		result_.rms       = rms;
-		result_.count     = count;
-		result_.missed    = missed;
-		result_.timeStamp = timeStamp;
-		result_.pulseId   = pulseId;
-		result_.stat      = stat;
-		result_.sevr      = sevr;
 	}
+
+	static BsaResultPtr alloc( BsaChid chid, BsaEdef edef );
 } BsaResultItem;
 
 class BsaSlot {
 public:
 	BsaPattern               *pattern_;
 	unsigned                  noChangeCnt_;
+	BsaResultPtr              work_;
+	unsigned                  currentRes_;
 	BsaComp                   comp_;
-	BsaPulseId                pulseId_;
-	unsigned                  seq_;
 	void                     *usrPvt_;
 	BsaSimpleDataSinkStruct   callbacks_;
+	unsigned                  maxResults_;
 
-	BsaSlot()
-	: pattern_ (0)
-	{
-	}
+	BsaSlot(BsaChid chid, BsaEdef edef);
 };
 
 class BsaChannelImpl : public FinalizePopCallback {
@@ -86,7 +78,7 @@ public:
 	static const BsaSevr  SEVR_INV     =  3;
 
 private:
-	RingBufferSync<BsaResultItem>              *outBuf_;
+	RingBufferSync<BsaResultPtr>               *outBuf_;
 
 	std::vector<BsaSlot>                        slots_;
 	uint64_t                                    inUseMask_;
@@ -109,13 +101,13 @@ private:
 
 	
 public:
-	BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultItem> *obuf);
+	BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultPtr> *obuf);
 
 	virtual void
 	processInput(PatternBuffer*, BsaDatum *);
 
 	virtual void
-	processOutput(BsaResultItem *pitem);
+	processOutput(BsaResultPtr *pitem);
 
 	void
 	process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item);

@@ -4,7 +4,7 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS BELOW HERE
 
-#USR_CXXFLAGS += -std=c++11
+USR_CXXFLAGS += -std=c++11
 
 # Build an IOC support library
 LIBRARY_IOC += BsaCore
@@ -24,7 +24,7 @@ BsaCore_SRCS += BsaApi.cc
 
 BsaTest_SRCS += BsaTest.cc
 
-BsaTest_SYS_LIBS += pthread
+BsaTest_SYS_LIBS += pthread mcheck
 
 BsaTest_LIBS += BsaCore $(EPICS_BASE_IOC_LIBS)
 

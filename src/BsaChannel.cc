@@ -4,17 +4,32 @@
 
 #undef BSA_CHANNEL_DEBUG
 
-BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultItem> *obuf)
+BsaResultPtr
+BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
+{
+	return BsaResultPtr( BsaPoolAllocator<BsaResultItem>::make(chid, edef) );
+}
+
+BsaSlot::BsaSlot(BsaChid chid, BsaEdef edef)
+: pattern_   ( 0                                  ),
+  work_      ( BsaResultItem::alloc( chid, edef ) ),
+  currentRes_( 0                                  ),
+  comp_      ( &work_->results_[currentRes_]      ),
+  maxResults_( BSA_RESULTS_MAX                    )
+{
+}
+
+BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultPtr> *obuf)
 : outBuf_   ( obuf         ),
   inUseMask_( 0            ),
   deferred_ ( false        ),
   name_     ( name         ),
   chid_     ( chid         )
 {
-unsigned i;
+unsigned edef;
 	slots_.reserve( NUM_EDEF_MAX );
-	for ( i=0; i<NUM_EDEF_MAX; i++ ) {
-		slots_.push_back( BsaSlot() );
+	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
+		slots_.push_back( BsaSlot(chid, edef) );
 	}
 }
 
@@ -108,6 +123,8 @@ BsaChannelImpl::process(BsaEdef edef, BsaPattern *pattern, BsaDatum *item)
 uint64_t msk = (1ULL<<edef);
 BsaSevr  edefSevr;
 
+BsaSlot &slot( slots_[edef] );
+
 #ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d)\n", edef);
 #endif
@@ -116,8 +133,29 @@ printf("BsaChannelImpl::process (edef %d)\n", edef);
 #ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 #endif
-		slots_[edef].comp_.reset( pattern->timeStamp );
-		slots_[edef].seq_ = 0;
+		BsaResultPtr buf;
+
+		// mark the init spot
+		slot.work_->isIni_ = true;
+
+		// If there is a previous result we must send it off
+		if ( slot.work_->numResults_ > 0 ) {
+			// swap buffers
+			buf        = slot.work_;
+			slot.work_ = BsaResultItem::alloc( chid_, edef );
+		}
+
+		// 'comp' still looks at the old buffer; 'reset' wraps up
+		// the previous computation and initializes the next one
+		// (possibly in the new buffer).
+		// In any case, numResults must now be 0...
+
+		slot.comp_.reset( pattern->timeStamp, &slot.work_->results_[0] );
+
+		// if there was an old buffer we must send it out now...
+		if ( buf ) {
+			outBuf_->push_back( buf );
+		}
 	}
 
 	if ( pattern->edefActiveMask & msk ) {
@@ -134,14 +172,13 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
 			}
 
 			if ( item->sevr < edefSevr ) {
-				slots_[edef].comp_.addData( item->val, item->timeStamp, item->sevr, item->stat );
-				slots_[edef].pulseId_ = pattern->pulseId;
+				slot.comp_.addData( item->val, item->timeStamp, pattern->pulseId, item->sevr, item->stat );
 			}
 		} else {
 #ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 #endif
-			slots_[edef].comp_.miss();
+			slot.comp_.miss();
 		}
 	}
 
@@ -149,24 +186,23 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 #ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
 #endif
-		unsigned long n = slots_[edef].comp_.getNum();
-		outBuf_->push_back(
-			BsaResultItem(
-				chid_,
-				edef,
-				slots_[edef].seq_,
-				slots_[edef].comp_.getMean(),
-				::sqrt(slots_[edef].comp_.getPopVar()),
-				n,
-				slots_[edef].comp_.getMissing(),
-				slots_[edef].comp_.getTimeStamp(),
-				slots_[edef].pulseId_,
-				slots_[edef].comp_.getMaxSevr(),
-				slots_[edef].comp_.getMaxSevrStat()
-			)
-		);
-		slots_[edef].comp_.resetAvg();
-		slots_[edef].seq_++;
+		BsaResultPtr buf;
+
+		if ( ++slot.work_->numResults_ >= slot.maxResults_ ) {
+			// swap buffers
+			buf        = slot.work_;
+			slot.work_ = BsaResultItem::alloc( chid_, edef );
+		}
+
+		// 'comp' still looks at the old buffer; 'resetAvg' wraps up
+		// the previous computation and initializes the next one
+		// (possibly in the new buffer)
+
+		slot.comp_.resetAvg( &slot.work_->results_[slot.work_->numResults_] );
+
+		if ( buf ) {
+			outBuf_->push_back( buf );
+		}
 	}
 }
 
@@ -274,14 +310,20 @@ printf("ProcessInput: pattern not fnd (%llu)\n", (unsigned long long)pitem->time
 }
 
 void
-BsaChannelImpl::processOutput(BsaResultItem *pitem)
+BsaChannelImpl::processOutput(BsaResultPtr *pitem)
 {
-Lock      lg( omtx_ );
-	if ( (1<<pitem->edef_) & inUseMask_ ) {
-		if ( pitem->seq_ == 0 ) {
-			slots_[pitem->edef_].callbacks_.OnInit( this, slots_[pitem->edef_].usrPvt_ );
+Lock         lg( omtx_ );
+BsaResultPtr buf;
+
+	         buf.swap( *pitem );
+
+BsaSlot     &slot( slots_[buf->edef_] );
+
+	if ( (1<<buf->edef_) & inUseMask_ ) {
+		if ( buf->isIni_ ) {
+			slot.callbacks_.OnInit( this, slot.usrPvt_ );
 		}
-		slots_[pitem->edef_].callbacks_.OnResult( this, &pitem->result_, 1, slots_[pitem->edef_].usrPvt_ );
+		slot.callbacks_.OnResult( this, &buf->results_[0], buf->numResults_, slot.usrPvt_ );
 	}
 }
 
