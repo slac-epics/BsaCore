@@ -8,9 +8,11 @@ template <std::size_t BLKSZ>
 class BsaFreeList {
 private:
 	std::size_t     numBlks_;
+	std::size_t     lstBlks_;
 	std::size_t     maxBlks_;
 	void           *lstHead_;
 	BsaAlias::mutex lstMutx_;
+	bool            defDest_;
 
 	void *
 	pluck()
@@ -18,21 +20,57 @@ private:
 	void *rval;
 		rval     = lstHead_;
 		lstHead_ = *static_cast<void**>(lstHead_);
+		lstBlks_--;
 		return rval;
 	}
-
 	BsaFreeList(const BsaFreeList&);
 	BsaFreeList &operator=(const BsaFreeList&);
 
 	static const std::size_t MAX_UNLIMITED = -1;
 
-public:
 	BsaFreeList(std::size_t maxBlks = MAX_UNLIMITED)
 	: numBlks_(       0 ),
+	  lstBlks_(       0 ),
 	  maxBlks_( maxBlks ),
-	  lstHead_(    NULL )
+	  lstHead_(    NULL ),
+	  defDest_(   false )
 	{
 	}
+
+	void operator delete(void *a)
+	{
+		::operator delete( static_cast<BsaFreeList*>( a ) );
+	}
+
+public:
+
+	static BsaFreeList *
+	create(std::size_t maxBlks = MAX_UNLIMITED)
+	{
+		return new BsaFreeList( maxBlks );
+	}
+
+	static void
+	destroy(BsaFreeList *theList)
+	{
+	BsaAlias::Guard lg( theList->lstMutx_ );
+
+		if ( theList->numBlks_ != theList->lstBlks_ ) {
+			theList->defDest_ = true;
+		} else {
+			lg.release();
+			delete( theList );
+		}
+	}
+
+	// DTOR for shared pointer
+	class DTOR {
+	public:
+		void operator ()(BsaFreeList *theList)
+		{
+			destroy( theList );
+		}
+	};
 
 	void *alloc(std::size_t sz)
 	{
@@ -60,12 +98,16 @@ public:
 	BsaAlias::Guard lg( lstMutx_ );
 		* static_cast<void**>( p ) = lstHead_;
 		lstHead_                   = p;
+		lstBlks_++;
+		if ( defDest_ && lstBlks_ == numBlks_ ) {
+			lg.release();
+			delete( this );
+		}
 	}
 
+	// Caller (free or destroy) holds the mutex!
 	~BsaFreeList()
 	{
-	BsaAlias::Guard lg( lstMutx_ );
-		printf("BsaFreeList had accumulated %ld items\n", (long)numBlks_);
 		while ( lstHead_ ) {
 			::operator delete( pluck() );
 		}
@@ -74,8 +116,13 @@ public:
 	// all allocations of the same size use the same pool
 	static BsaFreeList *thePod()
 	{
-		static BsaFreeList thePod_;
-		return &thePod_;
+#if 1
+		static BsaAlias::shared_ptr<BsaFreeList> thePod_( create(), DTOR() );
+		return thePod_.get();
+#else
+	static BsaFreeList *xxx = create();
+		return xxx;
+#endif
 	}
 };
 
