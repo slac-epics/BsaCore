@@ -367,7 +367,7 @@ uint64_t  m = (1ULL<<edef);
 
 	inUseMask_ |= m;
 
-	return maxResults;
+	return 0;
 }
 
 
