@@ -86,10 +86,11 @@ BSA_AddSimpleSink(
 	BsaChannel        bsaChannel,
 	BsaEdef           edefIndex,	
 	BsaSimpleDataSink sink,
-	void             *closure
+	void             *closure,
+	unsigned          maxResults
 )
 {
-	return bsaChannel->addSink( edefIndex, sink, closure );
+	return bsaChannel->addSink( edefIndex, sink, closure, maxResults );
 }
 
 extern "C" int

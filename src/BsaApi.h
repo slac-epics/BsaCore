@@ -232,6 +232,9 @@ typedef const struct BsaSimpleDataSinkStruct *BsaSimpleDataSink;
 /*
  * Register a sink with a BSA channel for a given EDEF index.
  *
+ * 'maxResults' specifies how many results may be delivered
+ * to a single call of 'OnResult'.
+ *
  * Returns: status (0 == OK)
  */
 int
@@ -239,7 +242,8 @@ BSA_AddSimpleSink(
 	BsaChannel        bsaChannel,
 	BsaEdef           edefIndex,	
 	BsaSimpleDataSink sink,
-	void             *closure
+	void             *closure,
+	unsigned          maxResults
 );
 
 /*

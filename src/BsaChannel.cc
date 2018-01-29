@@ -344,7 +344,7 @@ BsaSlot     &slot( slots_[buf->edef_] );
 }
 
 int
-BsaChannelImpl::addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure)
+BsaChannelImpl::addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure, unsigned maxResults)
 {
 Lock      lg( omtx_ );
 uint64_t  m = (1ULL<<edef);
@@ -358,13 +358,16 @@ uint64_t  m = (1ULL<<edef);
 		return -1;
 	}
 
-	slots_[edef].usrPvt_    = closure;
-	slots_[edef].callbacks_ = *sink;
+	if ( maxResults > BSA_RESULTS_MAX )
+		maxResults = BSA_RESULTS_MAX;
+
+	slots_[edef].maxResults_ = maxResults;
+	slots_[edef].usrPvt_     = closure;
+	slots_[edef].callbacks_  = *sink;
 
 	inUseMask_ |= m;
 
-
-	return 0;
+	return maxResults;
 }
 
 
@@ -382,6 +385,8 @@ uint64_t  m = (1ULL<<edef);
 		fprintf(stderr,"Sinks Not Connected (channel %s, edef %d)\n", getName(), edef);
 		return -1;
 	}
+
+	slots_[edef].maxResults_ = BSA_RESULTS_MAX;
 
 	inUseMask_ &= ~m;
 

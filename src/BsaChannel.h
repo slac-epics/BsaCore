@@ -125,7 +125,7 @@ public:
 	getName() const;
 
 	int
-	addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure);
+	addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure, unsigned maxResults);
 
 	int
 	delSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure);

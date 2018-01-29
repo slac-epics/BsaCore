@@ -311,7 +311,7 @@ BsaChannel ch = BSA_CreateChannel("CH1");
 	tested    = 0;
 	for ( i=0; i<edefs.size(); i++ ) {
 		remaining += edefs[i].nvals();
-		if ( BSA_AddSimpleSink( ch, EDEF_0 + i, &dutSink, &edefs[i] ) ) {
+		if ( BSA_AddSimpleSink( ch, EDEF_0 + i, &dutSink, &edefs[i], 1 ) ) {
 			throw std::runtime_error("TEST FAILED (unable to attach sink)");
 		}
 		theGen()->setEdef( edefs[i], EDEF_0 + i );
