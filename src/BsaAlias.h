@@ -4,16 +4,18 @@
 #if __cplusplus > 199711L
 #include <atomic>
 #include <memory>
-#include <condition_variable>
-#include <mutex>
-#include <chrono>
-#include <thread>
 #else
 #include <boost/atomic/atomic.hpp>
-#include <boost/move/unique_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/make_shared.hpp>
+#endif
+
+#if __cplusplus > 199711L && ! USE_PTHREADS
+#include <condition_variable>
+#include <mutex>
+#include <chrono>
+#else
 #include <BsaMutex.h>
 #include <BsaCondVar.h>
 #include <BsaPosixClock.h>
@@ -24,14 +26,17 @@ namespace BsaAlias {
 
 #if __cplusplus > 199711L
 	using namespace            std;
-	typedef unique_lock<std::mutex> Guard;
-	typedef std::chrono::time_point<std::chrono::steady_clock> Time;
-	typedef std::chrono::steady_clock Clock;
-	using   std::chrono::nanoseconds;
-	using   std::this_thread::sleep_until;
 #else
 	using namespace            boost;
 	using namespace            boost::movelib;
+#endif
+#if __cplusplus > 199711L && ! USE_PTHREADS
+	typedef unique_lock<std::mutex>                            Guard;
+	typedef std::chrono::time_point<std::chrono::steady_clock> Time;
+	typedef std::chrono::nanoseconds                           Period;
+	using   std::chrono::nanoseconds;
+	typedef std::chrono::steady_clock                          Clock;
+#else
 	typedef BsaMutex           mutex;
 	typedef BsaCondVar         condition_variable;
 	typedef BsaMutex::Guard    Guard;
@@ -41,10 +46,10 @@ namespace BsaAlias {
 	};
 
 	typedef BsaPosixTime       Time;
+	typedef BsaPosixTime       Period;
 	typedef BsaPosixClock      Clock;
 
 	Time                       nanoseconds(uint64_t);
-
 #endif
 };
 

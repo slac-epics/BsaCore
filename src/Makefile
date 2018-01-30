@@ -4,7 +4,15 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS BELOW HERE
 
-#USR_CXXFLAGS += -std=c++11
+# Use c++11 atomic types and smart pointers (if c++11 is not supported by
+# the compiler then we'll fall back on boost).
+# If c++11 is enabled then see below for USE_PTHREADS.
+USR_CXXFLAGS += -std=c++11
+
+# USE_PTHREADS uses the pthread based mutex API and enables priority inheritance
+# If USE_PTHREADS is undefined or 0 then c++ 11 mutexes are used (without
+# priority inheritance). If c++11 is not enabled then USE_PTHREADS is enabled.
+USR_CPPFLAGS += -DUSE_PTHREADS=1
 
 # Build an IOC support library
 LIBRARY_IOC += BsaCore

@@ -18,7 +18,7 @@ private:
 	Mutex                    mtx_;
 	CondVar                  minfilled_;
 	CondVar                  not_full_;
-	BsaAlias::Time           period_;
+	BsaAlias::Period         period_;
 	BsaAlias::Time           timeout_;
 
 protected:
@@ -185,12 +185,12 @@ public:
 	}
 
 	virtual void
-	setPeriod(const BsaAlias::Time &period)
+	setPeriod(const BsaAlias::Period &period)
 	{
 		period_ = period;
 	}
 
-	virtual BsaAlias::Time
+	virtual BsaAlias::Period
 	getPeriod()
 	{
 		return period_;
