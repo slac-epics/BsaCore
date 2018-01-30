@@ -224,27 +224,38 @@ EDEF *edef = (EDEF *)closure;
 
 static void edefResult(BsaChannel ch, BsaResult results, unsigned numResults, void *closure)
 {
+static unsigned numResMax = 0;
 EDEF *edef = (EDEF *)closure;
 unsigned long i;
-unsigned long long v = results[0].pulseId;
+unsigned      res;
+unsigned long long v;
+
+if  ( numResults > numResMax ) {
+	numResMax = numResults;
+}
+
+for ( res = 0; res < numResults; res++ ) {
+
+	v = results[res].pulseId;
+
 #ifdef VERBOSE
 	printf("BSA RESULT (on channel %s, EDEF %d)\n", BSA_GetChannelId( ch ), edef->id());
-	printf("  avg %g\n",  results[0].avg);
-	printf("  rms %g\n",  results[0].rms);
-	printf("  cnt %lu\n", results[0].count);
-	printf("  mis %lu\n", results[0].missed);
+	printf("  avg %g\n",  results[res].avg);
+	printf("  rms %g\n",  results[res].rms);
+	printf("  cnt %lu\n", results[res].count);
+	printf("  mis %lu\n", results[res].missed);
 	printf("  pid %llu\n", v );
-	printf("  sev %u\n",  results[0].sevr);
-	printf("  sta %u\n",  results[0].stat);
+	printf("  sev %u\n",  results[res].sevr);
+	printf("  sta %u\n",  results[res].stat);
 #endif
 
-	if ( results[0].count + results[0].missed != edef->navg() ) {
-		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %lu\n", edef->id(), v, results[0].count, results[0].missed, edef->navg());
+	if ( results[res].count + results[res].missed != edef->navg() ) {
+		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %lu\n", edef->id(), v, results[res].count, results[res].missed, edef->navg());
 		throw std::runtime_error("Test FAILED -- count + missed != navg");
 	}
 
 	double avg = 0.0;
-	for ( i = 0; i < results[0].count; i++ ) {
+	for ( i = 0; i < results[res].count; i++ ) {
 		avg += (double)v;
 		v = v - edef->period();
 	}
@@ -252,26 +263,29 @@ unsigned long long v = results[0].pulseId;
 
 	double rms = 0.0;
 	double dif;
-	v = (unsigned long long)results[0].pulseId;
-	for ( i = 0; i < results[0].count; i++ ) {
+	v = (unsigned long long)results[res].pulseId;
+	for ( i = 0; i < results[res].count; i++ ) {
 		dif  = ((double)v - avg);
 		rms += dif*dif;
 		v = v - edef->period();
 	}
 	rms = ::sqrt(rms/(double)i);
 
-	if ( abs(avg - results[0].avg) > 1.0E-10 ) {
+	if ( abs(avg - results[res].avg) > 1.0E-10 ) {
 		throw std::runtime_error("Test FAILED -- AVG mismatch");
 	}
 
-	if ( abs(rms - results[0].rms) > 1.0E-10 ) {
+	if ( abs(rms - results[res].rms) > 1.0E-10 ) {
 		throw std::runtime_error("Test FAILED -- RMS mismatch");
 	}
 
 	if ( ++tested == remaining ) {
 		printf("%ld results tested; SUCCESS\n", tested);
+		printf("Max result vector received was %d\n", numResMax);
 		theGen()->kill();
 	}
+
+}
 
 	BSA_ReleaseResults( results );
 }
@@ -311,7 +325,7 @@ BsaChannel ch = BSA_CreateChannel("CH1");
 	tested    = 0;
 	for ( i=0; i<edefs.size(); i++ ) {
 		remaining += edefs[i].nvals();
-		if ( BSA_AddSimpleSink( ch, EDEF_0 + i, &dutSink, &edefs[i], 1 ) ) {
+		if ( BSA_AddSimpleSink( ch, EDEF_0 + i, &dutSink, &edefs[i], 3 ) ) {
 			throw std::runtime_error("TEST FAILED (unable to attach sink)");
 		}
 		theGen()->setEdef( edefs[i], EDEF_0 + i );
@@ -322,6 +336,8 @@ BsaChannel ch = BSA_CreateChannel("CH1");
 	theGen()->start();
 
 	theGen()->join();
+
+	BSA_DumpChannelStats( ch, NULL );
 
 	printf("Leaving\n");
 }

@@ -35,11 +35,19 @@ BsaSlot::BsaSlot(BsaChid chid, BsaEdef edef)
 BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultPtr> *obuf)
 : outBuf_   ( obuf         ),
   inUseMask_( 0            ),
+  dirtyMask_( 0            ),
   deferred_ ( false        ),
   name_     ( name         ),
   chid_     ( chid         )
 {
 unsigned edef;
+  	patternTooNew_      = 0;
+	patternTooOld_      = 0;
+	patternNotFnd_      = 0;
+	numTimeouts_        = 0;
+	numTimeoutFlushes_  = 0;
+	noProgressTimeouts_ = 0;
+
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
 		slots_.push_back( BsaSlot(chid, edef) );
@@ -193,6 +201,7 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 #endif
 			slot.comp_.miss();
 		}
+		dirtyMask_ |= msk;
 	}
 
 	if ( pattern->edefAvgDoneMask & msk ) {
@@ -214,7 +223,57 @@ printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
 		slot.comp_.resetAvg( &slot.work_->results_[slot.work_->numResults_] );
 
 		if ( buf ) {
+			dirtyMask_ &= ~msk;
 			outBuf_->push_back( buf );
+		}
+	}
+}
+
+void
+BsaChannelImpl::dump(FILE *f)
+{
+	fprintf(f,"BSA Channel[%d] (%s) Dump\n", chid_, getName()                                   );
+	fprintf(f,"  EDEF in use mask 0x%llx\n", (unsigned long long)inUseMask_                     );
+	fprintf(f,"  Counters:\n");
+	fprintf(f,"     # items dropped because of 'pattern too new': %lu\n", patternTooNew_        );
+	fprintf(f,"     # items dropped because of 'pattern too old': %lu\n", patternTooOld_        );
+	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
+	fprintf(f,"     # timeout ticks                             : %lu\n", numTimeouts_          );
+	fprintf(f,"     # results flushed by timeouts               : %lu\n", numTimeoutFlushes_    );
+	fprintf(f,"     # timeouts with no progress                 : %lu\n", noProgressTimeouts_   );
+}
+
+void
+BsaChannelImpl::timeout()
+{
+Lock lg( mtx_ );
+uint64_t    msk;
+BsaEdef     edef;
+
+	numTimeouts_++;
+
+	for ( edef = 0, msk = 1; dirtyMask_; edef++, (dirtyMask_ &= ~msk), msk <<= 1 ) {
+		if ( ! (msk & dirtyMask_) ) {
+			continue;
+		}
+
+		BsaSlot &slot( slots_[edef] );
+
+		// push finished results to the output buffer but keep the last ongoing computation
+		if ( slot.work_->numResults_ > 0 ) {
+
+			BsaResultPtr buf   = slot.work_;
+			slot.work_ = BsaResultItem::alloc( chid_, edef );
+
+			// the 'last' result might still be computing/averaging. Copy its current contents
+			// to the new buffer
+			slot.comp_.copy( &slot.work_->results_[0] );
+
+			outBuf_->push_back( buf );
+
+			numTimeoutFlushes_++;
+		} else {
+			noProgressTimeouts_++;
 		}
 	}
 }

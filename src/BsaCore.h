@@ -15,6 +15,9 @@ template <typename T> class BsaBuf : public BsaThread, public RingBufferSync<T> 
 private:
 	BsaCore     *pcore_;
 
+protected:
+	virtual BsaCore *getCore();
+
 public:
 	BsaBuf(BsaCore *pcore, unsigned ldSz, const char *name)
 	: BsaThread        ( name  ),
@@ -32,12 +35,33 @@ public:
 
 	~BsaBuf();
 
+
 	virtual void run();
 
 	virtual void processItem(T *pitem);
 };
 
-typedef BsaBuf<BsaDatum>      BsaInpBuf;
+class BsaInpBuf : public BsaBuf<BsaDatum> {
+private:
+	unsigned id_;
+public:
+	static const uint64_t DFLT_PERIOD_NS = 100ULL*1000000ULL;
+
+	BsaInpBuf(BsaCore *pcore, unsigned ldSz, const char *name, unsigned id)
+	: BsaBuf<BsaDatum> ( pcore, ldSz, name ),
+	  id_              ( id                )
+	{
+		setPeriod( BsaAlias::nanoseconds( DFLT_PERIOD_NS ) );
+	}
+
+	unsigned getId()
+	{
+		return id_;
+	}
+
+	virtual void
+	timeout();
+};
 
 typedef BsaBuf<BsaResultPtr>  BsaOutBuf;
 
@@ -80,6 +104,12 @@ public:
 
 	void
 	processOutput(BsaResultPtr *);
+
+	void
+	dumpChannelInfo(FILE *f = ::stdout);
+
+	void
+	inputTimeout(BsaInpBuf *inpBuf);
 
 	int
 	storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);

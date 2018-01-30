@@ -28,6 +28,13 @@ BsaComp::resetAvg(ResPtr newBuf)
 }
 
 void
+BsaComp::copy(ResPtr newBuf)
+{
+	*newBuf  = *current_;	
+	current_ = newBuf;
+}
+
+void
 BsaComp::reset(BsaTimeStamp initTime, ResPtr newBuf)
 {
 	initTs_           = initTime;	

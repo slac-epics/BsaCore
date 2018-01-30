@@ -2,6 +2,7 @@
 #define BSA_API_H
 
 #include <bsaCallbackApi.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -265,6 +266,12 @@ BSA_DelSimpleSink(
  */
 extern "C" int
 BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*));
+
+/*
+ * Dump statistics (stdout if a null arg is passed)
+ */
+extern "C" void
+BSA_DumpChannelStats(BsaChannel bsaChannel, FILE *f);
 
 #ifdef __cplusplus
 }

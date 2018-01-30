@@ -18,6 +18,8 @@ private:
 	Mutex                    mtx_;
 	CondVar                  minfilled_;
 	CondVar                  not_full_;
+	BsaAlias::Time           period_;
+	BsaAlias::Time           timeout_;
 
 protected:
 
@@ -81,7 +83,9 @@ public:
 	// minfill: the number of elements that must always remain in the buffer
 	RingBufferSync(unsigned ldSz, unsigned minfill = 0)
 	: RingBuffer<T,ELT>( ldSz    ),
-	  minfill_     ( minfill )
+	  minfill_         ( minfill ),
+	  period_          ( BsaAlias::nanoseconds( 10ULL*365ULL*3600ULL*24ULL*1000000000ULL ) ),
+	  timeout_         ( BsaAlias::Clock::now() + period_                                  )
 	{
 		if ( minfill >= (unsigned)(1<<ldSz) ) {
 			throw std::runtime_error( std::string("Requested minfill too big") );
@@ -91,7 +95,9 @@ public:
 	// minfill: the number of elements that must always remain in the buffer
 	RingBufferSync(unsigned ldSz, const ELT &ini, unsigned minfill = 0)
 	: RingBuffer<T,ELT>( ldSz, ini ),
-	  minfill_         ( minfill   )
+	  minfill_         ( minfill   ),
+	  period_          ( BsaAlias::nanoseconds( 10ULL*365ULL*3600ULL*24ULL*1000000000ULL ) ),
+	  timeout_         ( BsaAlias::Clock::now() + period_                                  )
 	{
 		if ( minfill >= (unsigned)(1<<ldSz) ) {
 			throw std::runtime_error( std::string("Requested minfill too big") );
@@ -132,6 +138,17 @@ public:
 		}
 	}
 
+	bool wait_until(BsaAlias::Time &timeout)
+	{
+	Lock l( mtx_ );
+		while ( ! checkMinFilled() ) {
+			if ( BsaAlias::cv_status::timeout == minfilled_.wait_until( l, timeout ) ) {
+				return checkMinFilled();
+			}
+		}
+		return true;
+	}
+
 	bool tryWait()
 	{
 		return wait( 0, false, false );
@@ -167,10 +184,37 @@ public:
 	{
 	}
 
+	virtual void
+	setPeriod(const BsaAlias::Time &period)
+	{
+		period_ = period;
+	}
+
+	virtual BsaAlias::Time
+	getPeriod()
+	{
+		return period_;
+	}
+
+	virtual void
+	setTimeout(const BsaAlias::Time &abs_timeout)
+	{
+		timeout_ = abs_timeout;
+	}
+
+	virtual void
+	timeout()
+	{
+		throw std::runtime_error("RingBufferSync::timeout must be overridden");
+	}
+
 	void
 	process()
 	{
-		wait();
+		while ( ! wait_until( timeout_ ) ) {
+			timeout();
+			timeout_ += period_;
+		}
 
 		T &item( RingBuffer<T,ELT>::front() );
 
@@ -184,6 +228,8 @@ public:
 	processLoop(void *arg)
 	{
 	RingBufferSync<T,ELT> *thebuf = (RingBufferSync<T,ELT>*)arg;
+
+		thebuf->setTimeout( BsaAlias::Clock::now() + thebuf->period_ ); 
 		while ( 1 ) {
 			thebuf->process();
 		}

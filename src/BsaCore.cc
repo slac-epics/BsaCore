@@ -6,14 +6,14 @@
 
 template<>
 void
-BsaInpBuf::processItem(BsaDatum *pitem)
+BsaBuf<BsaDatum>::processItem(BsaDatum *pitem)
 {
 	pcore_->processInput( pitem );
 }
 
 template<>
 void
-BsaOutBuf::processItem(BsaResultPtr *pitem)
+BsaBuf<BsaResultPtr>::processItem(BsaResultPtr *pitem)
 {
 	pcore_->processOutput( pitem );
 }
@@ -22,8 +22,16 @@ template<typename T>
 void
 BsaBuf<T>::run()
 {
+	BsaBuf<T>::setTimeout( BsaAlias::Clock::now() + BsaBuf<T>::getPeriod() );
 	while ( 1 )
 		RingBufferSync<T>::process();
+}
+
+template <typename T>
+BsaCore *
+BsaBuf<T>::getCore()
+{
+	return pcore_;
 }
 
 template<typename T>
@@ -31,6 +39,12 @@ BsaBuf<T>::~BsaBuf()
 {
 	// shutdown thread before tearing other resources down
 	stop();
+}
+
+void
+BsaInpBuf::timeout()
+{
+	getCore()->inputTimeout( this );
 }
 
 BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
@@ -78,7 +92,7 @@ BsaChannel found = findChannel( name );
 		if ( (unsigned)chid < NUM_INP_BUFS ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "IBUF%d", chid);
-			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam ) ) );
+			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid ) ) );
 			inpBufs_[chid]->start();
 		}
 		if ( (unsigned)chid < NUM_OUT_BUFS ) {
@@ -115,6 +129,17 @@ BsaChannelVec::iterator it;
 }
 
 void
+BsaCore::inputTimeout(BsaInpBuf *pbuf)
+{
+unsigned chid = pbuf->getId();
+	while ( chid < channels_.size() ) {
+		channels_[chid]->timeout();
+		chid += NUM_INP_BUFS;
+	}
+}
+
+
+void
 BsaCore::run()
 {
 	while ( 1 ) {
@@ -142,4 +167,13 @@ BsaCore::processOutput(BsaResultPtr *pitem)
 {
 BsaChid chid = (*pitem)->chid_;
 	channels_[chid]->processOutput( pitem );
+}
+
+void
+BsaCore::dumpChannelInfo(FILE *f)
+{
+BsaChannelVec::iterator it;
+	for ( it = channels_.begin(); it != channels_.end(); ++it ) {
+		(*it)->dump( f );
+	}
 }

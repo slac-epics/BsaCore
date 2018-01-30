@@ -129,3 +129,14 @@ BSA_ReleaseResults(
 {
 	BsaResultItem::release( results );
 }
+
+extern "C" void
+BSA_DumpChannelStats(
+	BsaChannel channel,
+	FILE      *f)
+{
+	if ( ! f ) {
+		f = stdout;
+	}
+	channel->dump( f );
+}

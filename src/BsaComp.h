@@ -18,6 +18,8 @@ public:
 
 	void          resetAvg(ResPtr r);
 
+	void          copy(ResPtr r);
+
 	void          addData(double x, BsaTimeStamp ts, BsaPulseId, BsaSevr sevr, BsaStat stat);
 
 	void          miss();

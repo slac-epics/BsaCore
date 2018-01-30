@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <errno.h>
 
-#define BSA_THREAD_DEBUG
+#undef  BSA_THREAD_DEBUG
 
 
 class BsaThreadWrapper {
@@ -95,6 +95,9 @@ int st;
 		printf("%s\n", strerror(st));
 		throw std::runtime_error("pthread_cancel failed");
 	}
+#ifdef BSA_THREAD_DEBUG
+	printf("Thread %s killed\n", getName());
+#endif
 }
 
 void
@@ -106,6 +109,9 @@ int st;
 		printf("%s\n", strerror(st));
 		throw std::runtime_error("pthread_join failed");
 	}
+#ifdef BSA_THREAD_DEBUG
+	printf("Thread %s joined\n", getName());
+#endif
 	tid_.reset();
 }
 
@@ -113,6 +119,9 @@ int st;
 void
 BsaThread::stop()
 {
+#ifdef BSA_THREAD_DEBUG
+	printf("Stopping %s (tid_ %d)\n", getName(), !!tid_);
+#endif
 	if ( tid_ ) {
 		kill();
 		join();

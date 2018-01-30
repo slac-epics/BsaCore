@@ -11,7 +11,7 @@
 #include <BsaFreeList.h>
 #include <stdint.h>
 
-#define BSA_RESULTS_MAX 1
+#define BSA_RESULTS_MAX 20
 
 typedef signed char BsaChid;
 
@@ -85,10 +85,15 @@ private:
 
 	std::vector<BsaSlot>                        slots_;
 	uint64_t                                    inUseMask_;
+	uint64_t                                    dirtyMask_;
 
 	unsigned long                               patternTooNew_;
 	unsigned long                               patternTooOld_;
 	unsigned long                               patternNotFnd_;
+
+	unsigned long                               numTimeouts_;
+	unsigned long                               numTimeoutFlushes_;
+	unsigned long                               noProgressTimeouts_;
 
 	typedef BsaAlias::Guard                     Lock;
 	BsaAlias::mutex                             mtx_;
@@ -120,6 +125,12 @@ public:
 
 	void
 	evict(PatternBuffer *pbuf, BsaPattern *pattern);
+
+	void
+	timeout();
+
+	void
+	dump(FILE *f = ::stdout);
 
 	const char *
 	getName() const;
