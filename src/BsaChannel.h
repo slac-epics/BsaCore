@@ -39,7 +39,8 @@ typedef struct BsaResultItem {
 	BsaResultPtr            self_;
 	BsaChid                 chid_;
 	BsaEdef                 edef_;
-	bool                    isIni_;
+	bool                    isInit_;
+	epicsTimeStamp          initTs_;
 	unsigned                numResults_;
 	struct BsaResultStruct  results_[BSA_RESULTS_MAX];
 
@@ -48,7 +49,7 @@ typedef struct BsaResultItem {
 		BsaEdef        edef)
 	: chid_      ( chid  ),
 	  edef_      ( edef  ),
-	  isIni_     ( false ),
+	  isInit_    ( false ),
 	  numResults_(    0  )
 	{
 	}

@@ -199,8 +199,9 @@ BSA_ReleaseResults(
 struct BsaSimpleDataSinkStruct {
 	/* called when a new BSA starts */
 	void (*OnInit)(
-		BsaChannel self,
-		void      *closure
+		BsaChannel            self,
+		const epicsTimeStamp *initTime,
+		void                 *closure
 	);
 
 	/* called when one or more results are available
@@ -211,10 +212,10 @@ struct BsaSimpleDataSinkStruct {
 	 *       must only be called once.
 	 */
 	void (*OnResult)(
-		BsaChannel self,
-		BsaResult  results,
-		unsigned   numResults,
-		void      *closure
+		BsaChannel            self,
+		BsaResult             results,
+		unsigned              numResults,
+		void                 *closure
 	);
 
 
@@ -222,9 +223,10 @@ struct BsaSimpleDataSinkStruct {
 	 * terminated.
 	 */
 	void (*OnAbort)(
-		BsaChannel self,
-		int        status,
-		void      *closure
+		BsaChannel            self,
+		const epicsTimeStamp *initTime,
+		int                   status,
+		void                 *closure
 	);
 };
 

@@ -214,7 +214,7 @@ RegisterBsaTimingCallback( BsaTimingCallback cb, void *usrPvt )
 	return 0;
 }
 
-static void edefInit(BsaChannel ch, void *closure)
+static void edefInit(BsaChannel ch, const epicsTimeStamp *pts, void *closure)
 {
 #ifdef VERBOSE
 EDEF *edef = (EDEF *)closure;
@@ -290,7 +290,7 @@ for ( res = 0; res < numResults; res++ ) {
 	BSA_ReleaseResults( results );
 }
 
-static void edefAbort(BsaChannel ch, int status, void *closure)
+static void edefAbort(BsaChannel ch, const epicsTimeStamp *pts, int status, void *closure)
 {
 #ifdef VERBOSE
 	printf("BSA ABORT, status %d (on channel %s)\n", status, BSA_GetChannelId( ch ));

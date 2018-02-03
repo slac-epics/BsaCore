@@ -8,13 +8,10 @@ class BsaComp {
 private:
 	typedef BsaResultStruct *ResPtr;
 
-	BsaTimeStamp  initTs_;
 	ResPtr        current_;
 
 public:
 	BsaComp(ResPtr);
-
-	void          reset(BsaTimeStamp ts, ResPtr r);
 
 	void          resetAvg(ResPtr r);
 
@@ -24,20 +21,20 @@ public:
 
 	void          miss();
 
-	unsigned long getNum()         const;
-	double        getMean()        const;
-	double        getSumSquares()  const;
+	unsigned long getNum()           const;
+	double        getMean()          const;
+	double        getSumSquares()    const;
 	// population variance
-	double        getPopVar()      const;
+	double        getPopVar()        const;
 
-	BsaResult     getVal()         const;
+	BsaResult     getVal()           const;
 
-	BsaTimeStamp  getTimeStamp()   const;
+	BsaTimeStamp  getTimeStamp()     const;
 
-	unsigned long getMissing()     const;
+	unsigned long getMissing()       const;
  
-	BsaSevr       getMaxSevr()     const;
-	BsaStat       getMaxSevrStat() const;
+	BsaSevr       getMaxSevr()       const;
+	BsaStat       getMaxSevrStat()   const;
 };
 
 #endif

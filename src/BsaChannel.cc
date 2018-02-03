@@ -156,9 +156,6 @@ printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 #endif
 		BsaResultPtr buf;
 
-		// mark the init spot
-		slot.work_->isIni_ = true;
-
 		// If there is a previous result we must send it off
 		if ( slot.work_->numResults_ > 0 ) {
 			// swap buffers
@@ -171,7 +168,12 @@ printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 		// (possibly in the new buffer).
 		// In any case, numResults must now be 0...
 
-		slot.comp_.reset( pattern->timeStamp, &slot.work_->results_[0] );
+		slot.comp_.resetAvg( &slot.work_->results_[0] );
+
+		// mark the init spot
+		slot.work_->isInit_ = true;
+		slot.work_->initTs_ = pattern->timeStamp;
+
 
 		// if there was an old buffer we must send it out now...
 		if ( buf ) {
@@ -392,8 +394,8 @@ BsaResultPtr buf;
 BsaSlot     &slot( slots_[buf->edef_] );
 
 	if ( (1<<buf->edef_) & inUseMask_ ) {
-		if ( buf->isIni_ ) {
-			slot.callbacks_.OnInit( this, slot.usrPvt_ );
+		if ( buf->isInit_ ) {
+			slot.callbacks_.OnInit( this, &buf->initTs_, slot.usrPvt_ );
 		}
 		// since we pass the buffer to C code we must keep a shared_ptr reference.
 		// We do that simply by storing a shared_ptr in the result itself.

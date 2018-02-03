@@ -35,13 +35,6 @@ BsaComp::copy(ResPtr newBuf)
 }
 
 void
-BsaComp::reset(BsaTimeStamp initTime, ResPtr newBuf)
-{
-	initTs_           = initTime;	
-	resetAvg( newBuf );
-}
-
-void
 BsaComp::miss()
 {
 	current_->missed++;
