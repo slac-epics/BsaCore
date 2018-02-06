@@ -20,6 +20,8 @@ LIBRARY_IOC += BsaCore
 PROD_IOC += BsaTest
 PROD_IOC += SyncBufTest
 
+INC += BsaApi.h
+
 # Compile and add the code to the support library
 BsaCore_SRCS += BsaComp.cc
 BsaCore_SRCS += BsaThread.cc
