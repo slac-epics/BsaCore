@@ -204,14 +204,32 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 		dirtyMask_ |= msk;
 	}
 
-	if ( pattern->edefAvgDoneMask & msk ) {
+	bool avgDone = pattern->edefAvgDoneMask & msk;
+	bool update  = (pattern->edefUpdateMask | pattern->edefAllDoneMask) & msk;
+
+	if ( avgDone || update ) {
 #ifdef BSA_CHANNEL_DEBUG
-printf("BsaChannelImpl::process (edef %d) -- AVG_DONE\n", edef);
+printf("BsaChannelImpl::process (edef %d) --");
+if ( avgDone ) {
+printf(" AVG_DONE");
+}
+if ( pattern->edefUpdateMask & msk ) {
+printf(" UPDATE");
+}
+if ( pattern->edefAllDoneMask & msk ) {
+printf(" ALL_DONE");
+}
+printf("\n");
 #endif
 		BsaResultPtr buf;
 
-		if ( ++slot.work_->numResults_ >= slot.maxResults_ ) {
+		if (   (   avgDone && ( ++slot.work_->numResults_ >= slot.maxResults_ ))
+		    || (   update  && (   slot.work_->numResults_ >  0                )) ) {
+
 			// swap buffers
+#ifdef BSA_CHANNEL_DEBUG
+printf("Pushing out %d (max)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
+#endif
 			buf        = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
 		}
