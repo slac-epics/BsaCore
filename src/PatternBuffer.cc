@@ -1,6 +1,12 @@
 #include <PatternBuffer.h>
 #include <stdexcept>
 
+#undef  PBUF_PARANOIA
+
+#undef  PBUF_DEBUG
+
+#define ALWAYS_AGE_PATTERNS
+
 BsaPattern &
 BsaPattern::operator=(const BsaTimingData *p)
 {
@@ -151,17 +157,25 @@ Lock lg( getMtx() );
 	if ( ! pat || ! ( (pat->edefInitMask | pat->edefActiveMask) & (1<<edef)) )
 		return 0;
 
-#ifdef PBUF_DEBUG
+#if defined( PBUF_DEBUG )
 printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->head());
 #endif
 
-	unsigned idx = pat->seqIdx_[edef] - indexBufs_[edef]->head() + 1;
+	unsigned idx = ( (pat->seqIdx_[edef] - indexBufs_[edef]->head()) & mask() );
+
+#ifdef PBUF_PARANOIA
+	if ( (BsaTimeStamp)pat->timeStamp != (BsaTimeStamp)(*this)[ (*indexBufs_[edef])[idx] - head() ].timeStamp ) {
+		throw std::runtime_error("Internal Error: pattern mismatch");
+	}
+#endif
+
+	idx = idx + 1;
 
 	if ( idx >= indexBufs_[edef]->size() ) {
 		// no newer active pattern available
 		return 0;
 	}
-#ifdef PBUF_DEBUG
+#if defined( PBUF_DEBUG )
 printf("indexBufs[%d], %d, pattern buf head %d\n", idx, (*indexBufs_[edef])[idx], head());
 #endif
 	BsaPattern *rval = & (*this)[ (*indexBufs_[edef])[idx] - head() ];
@@ -184,12 +198,26 @@ Lock lg( getMtx() );
 void
 PatternBuffer::push_back(const BsaTimingData *pat)
 {
+#ifndef ALWAYS_AGE_PATTERNS
 uint64_t anyMask = pat->edefInitMask | pat->edefActiveMask;
 
-	/* don't bother storing a pattern that is not involved in BSA */
+	/* don't bother storing a pattern that is not involved in BSA
+	 * HOWEVER: this relies on some continuous BSA going on -- otherwise
+	 *          patterns may never 'age' out.
+	 */
 	if ( !  anyMask ) {
 		return;
 	}
+#else
+uint64_t pid;
+	{
+	Lock lg( getMtx() );
+		pid = back().pulseId;
+	}
+	if ( pid + 1 != pat->pulseId ) {
+		fprintf(stderr,"Non-sequential pulse IDs: had %d, new %d\n", pid, pat->pulseId);
+	}
+#endif
 
 #ifdef PBUF_DEBUG
 	{
