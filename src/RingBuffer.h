@@ -14,6 +14,7 @@ private:
 	std::vector<T> buf_;
 	unsigned       h_;
 	unsigned       t_;
+	unsigned       c_;
 	unsigned       m_;
 
 	RingBuffer & operator=(const RingBuffer&);
@@ -27,9 +28,10 @@ public:
 	typedef size_t   size_type;
 
 	RingBuffer(unsigned ldSz)
-	: h_(0),
-	  t_(0),
-	  m_((1<<ldSz)-1)
+	: h_( 0         ),
+	  t_( 0         ),
+	  c_( (1<<ldSz) ),
+	  m_( c_ - 1    )
 	{
 		if ( ldSz > MAX_LD_SZ )
 			throw std::range_error("RingBuffer: requested size too large");
@@ -109,6 +111,15 @@ public:
 		return (*this)[size()-1];
 	}
 
+	unsigned capa() const
+	{
+		return m_ + 1;
+	}
+
+	unsigned mask() const
+	{
+		return m_;
+	}
 
 	void push_back(ELT val)
 	{
