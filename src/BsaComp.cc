@@ -30,13 +30,18 @@ BsaComp::resetAvg(ResPtr newBuf)
 void
 BsaComp::copy(ResPtr newBuf)
 {
-	*newBuf  = *current_;	
+	*newBuf  = *current_;
 	current_ = newBuf;
 }
 
 void
-BsaComp::miss()
+BsaComp::miss(BsaTimeStamp ts, BsaPulseId pid)
 {
+	// If there is no data in the slot; still record the timestamp
+	if ( 0 == current_->count ) {
+		current_->timeStamp = ts;
+		current_->pulseId   = pid;
+	}
 	current_->missed++;
 }
 
@@ -45,6 +50,12 @@ BsaComp::getMissing() const
 {
 	return current_->missed;
 };
+
+unsigned long
+BsaComp::getCount() const
+{
+	return current_->count;
+}
 
 BsaTimeStamp
 BsaComp::getTimeStamp()   const
@@ -72,7 +83,7 @@ BsaComp::getVal() const
 
 
 void
-BsaComp::addData(double x, BsaTimeStamp ts, BsaPulseId pid, BsaSevr sevr, BsaStat stat)
+BsaComp::addData(double x, BsaTimeStamp ts, BsaPulseId pid, BsaSevr edefSevr, BsaSevr sevr, BsaStat stat)
 {
 double d1,d2;
 
@@ -85,7 +96,7 @@ double d1,d2;
 	 *
 	 * S2(n+1) = Sum{ i=1:n+1, (x(i) - M(n+1))^2 }
 	 *
-	 * with 
+	 * with
      *       d(i,n) := x(i) - M(n)
 	 *
 	 * introduced in
@@ -115,17 +126,25 @@ double d1,d2;
 	 * (published by B.P. Welford, 1962)
 	 */
 
-	current_->timeStamp  = ts;
-	current_->pulseId    = pid;
+	if ( sevr >= edefSevr ) {
+		// If there is no data in the slot; still record the timestamp
+		if ( 0 == current_->count ) {
+			current_->timeStamp  = ts;
+			current_->pulseId    = pid;
+		}
+	} else {
+		current_->timeStamp  = ts;
+		current_->pulseId    = pid;
 
-	current_->count++;
-	d1              = x - current_->avg;
-	current_->avg       += d1 / (double)current_->count;  
-	d2              = x - current_->avg;
-	current_->rms       += d1 * d2;
+		current_->count++;
+		d1              = x - current_->avg;
+		current_->avg       += d1 / (double)current_->count;
+		d2              = x - current_->avg;
+		current_->rms       += d1 * d2;
 
-	if ( sevr > current_->sevr     ) {
-		current_->sevr         = sevr;
-		current_->stat         = stat;
+		if ( sevr > current_->sevr     ) {
+			current_->sevr         = sevr;
+			current_->stat         = stat;
+		}
 	}
 }

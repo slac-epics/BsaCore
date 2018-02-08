@@ -17,11 +17,11 @@ public:
 
 	void          copy(ResPtr r);
 
-	void          addData(double x, BsaTimeStamp ts, BsaPulseId, BsaSevr sevr, BsaStat stat);
+	void          addData(double x, BsaTimeStamp ts, BsaPulseId, BsaSevr edefSevr, BsaSevr sevr, BsaStat stat);
 
-	void          miss();
+	void          miss(BsaTimeStamp ts, BsaPulseId pid);
 
-	unsigned long getNum()           const;
+	unsigned long getCount()         const;
 	double        getMean()          const;
 	double        getSumSquares()    const;
 	// population variance

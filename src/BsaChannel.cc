@@ -194,14 +194,12 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
 				edefSevr = SEVR_INV;
 			}
 
-			if ( item->sevr < edefSevr ) {
-				slot.comp_.addData( item->val, item->timeStamp, pattern->pulseId, item->sevr, item->stat );
-			}
+			slot.comp_.addData( item->val, item->timeStamp, pattern->pulseId, edefSevr, item->sevr, item->stat );
 		} else {
 #ifdef BSA_CHANNEL_DEBUG
 printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 #endif
-			slot.comp_.miss();
+			slot.comp_.miss(pattern->timeStamp, pattern->pulseId);
 		}
 		dirtyMask_ |= msk;
 	}
