@@ -158,6 +158,9 @@ printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 
 		// If there is a previous result we must send it off
 		if ( slot.work_->numResults_ > 0 ) {
+#ifdef BSA_CHANNEL_DEBUG
+printf("Pushing out %d (new init)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
+#endif
 			// swap buffers
 			buf        = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
@@ -279,7 +282,9 @@ BsaEdef     edef;
 
 		// push finished results to the output buffer but keep the last ongoing computation
 		if ( slot.work_->numResults_ > 0 ) {
-
+#ifdef BSA_CHANNEL_DEBUG
+printf("Pushing out %d (timeout)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
+#endif
 			BsaResultPtr buf   = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
 
@@ -309,7 +314,7 @@ BsaEdef     i;
 
 		pattern = pbuf->patternGet( pitem->timeStamp );
 
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("ChannelImpl::processInput -- got item (pulse id %llu)\n", (unsigned long long) pattern->pulseId);
 #endif
 
@@ -345,7 +350,7 @@ printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pul
 				// the current one.
 				pbuf->patternPut( tmpPattern );
 			} else {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- found no slot pattern\n", i);
 #endif
 				// pattern of last computation has expired
@@ -354,12 +359,15 @@ printf("processInput(%d) -- found no slot pattern\n", i);
 
 			if ( ! prevPattern ) {
 				// should not happen as at least 'pattern' should be found
-				throw std::runtime_error("no previous pattern found");
+				throw std::runtime_error(
+				           std::string("no previous pattern found (had a tmpPattern: ")
+				         + std::string( tmpPattern ? "YES)" : "NO)" )
+				);
 			}
 
 
 			while ( prevPattern != pattern ) {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i, (unsigned long long)prevPattern->pulseId, (unsigned long long)pattern->pulseId);
 #endif
 
