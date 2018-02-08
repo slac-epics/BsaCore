@@ -22,6 +22,8 @@ PROD_IOC += SyncBufTest
 
 INC += BsaApi.h
 
+DBD += bsaCore.dbd
+
 # Compile and add the code to the support library
 BsaCore_SRCS += BsaComp.cc
 BsaCore_SRCS += BsaThread.cc
@@ -32,6 +34,7 @@ BsaCore_SRCS += BsaChannel.cc
 BsaCore_SRCS += BsaCore.cc
 BsaCore_SRCS += BsaApi.cc
 BsaCore_SRCS += BsaPosixClock.cc
+BsaCore_SRCS += drvBsaCore.c
 
 BsaTest_SRCS += BsaTest.cc
 
