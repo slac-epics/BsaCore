@@ -9,7 +9,6 @@
 
 #undef  BSA_THREAD_DEBUG
 
-
 class BsaThreadWrapper {
 private:
 	pthread_t tid_;
@@ -21,6 +20,10 @@ private:
 
 public:
 	BsaThreadWrapper(BsaThread *runner);
+
+	~BsaThreadWrapper()
+	{
+	}
 
 	// RAII for pthread_attr_t
 	class Attr {
@@ -74,7 +77,6 @@ BsaThread::~BsaThread()
 	printf("Destroying %s\n", getName());
 #endif
 	stop();
-
 }
 
 void
@@ -92,7 +94,7 @@ BsaThread::kill()
 int st;
 	pthread_t tid = tid_->native_handle();
 	if ( (st = pthread_cancel( tid )) ) {
-		printf("%s\n", strerror(st));
+		fprintf(stderr, "%s\n", strerror(st));
 		throw std::runtime_error("pthread_cancel failed");
 	}
 #ifdef BSA_THREAD_DEBUG
@@ -105,8 +107,11 @@ BsaThread::join()
 {
 int st;
 	pthread_t tid = tid_->native_handle();
+#ifdef BSA_THREAD_DEBUG
+	printf("Joining %s\n", getName());
+#endif
 	if ( (st = pthread_join( tid, NULL )) ) {
-		printf("%s\n", strerror(st));
+		fprintf(stderr, "%s\n", strerror(st));
 		throw std::runtime_error("pthread_join failed");
 	}
 #ifdef BSA_THREAD_DEBUG
@@ -209,7 +214,8 @@ BsaThreadWrapper::SigMask::~SigMask()
 {
 int err;
 	if ( (err = pthread_sigmask( SIG_SETMASK, &orig_, NULL )) ) {
-		throw std::runtime_error( std::string("pthread_sigmask (restore) failed: ") + std::string(::strerror(err)) );
+		fprintf(stderr, "pthread_sigmask (restore) failed: %s\n", strerror(err) );
+		std::terminate();
 	}
 }
 
@@ -233,14 +239,14 @@ int     attempts;
         if ( (err = pthread_attr_setschedpolicy( attr.getp(), pol )) ) {
 			throw std::runtime_error( std::string("pthread_attr_setschedpolicy failed: ") + std::string(::strerror(err)) );
         }
-        if ( SCHED_OTHER != pol ) {
-            if ( (err = pthread_attr_setschedparam( attr.getp(), &param )) ) {
+		if ( SCHED_OTHER != pol ) {
+			if ( (err = pthread_attr_setschedparam( attr.getp(), &param )) ) {
 				throw std::runtime_error( std::string("pthread_attr_setschedparam(prio) failed: ") + std::string(::strerror(err)) );
-            }
-        }
-        if ( (err = pthread_attr_setinheritsched( attr.getp(), PTHREAD_EXPLICIT_SCHED)) ) { 
-			throw std::runtime_error( std::string("pthread_attr_setinheritsched failed: ") + std::string(::strerror(err)) );
-        }
+			}
+			if ( (err = pthread_attr_setinheritsched( attr.getp(), PTHREAD_EXPLICIT_SCHED)) ) { 
+				throw std::runtime_error( std::string("pthread_attr_setinheritsched failed: ") + std::string(::strerror(err)) );
+			}
+		}
 #else
         #warning "_POSIX_THREAD_PRIORITY_SCHEDULING not defined -- always using default priority"
 		fprintf(stderr,"BsaThread -- unable to use real-time scheduler; no OS support at compile time\n");
@@ -249,6 +255,8 @@ int     attempts;
         if ( (err = pthread_create( &tid_, attr.getp(), thread_fun, (void*)runner )) ) {
 			// throws if not recoverable
 			checkErr(runner, "pthread_create", err, priority);
+			// lower priority if we are not allowed to use RT
+			priority = 0;
 		}
     }
 	// communicate possibly corrected value back
