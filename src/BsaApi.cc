@@ -138,5 +138,9 @@ BSA_DumpChannelStats(
 	if ( ! f ) {
 		f = stdout;
 	}
-	channel->dump( f );
+	if ( ! channel ) {
+		theCore()->dumpChannelInfo( f );
+	} else {
+		channel->dump( f );
+	}
 }
