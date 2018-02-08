@@ -14,6 +14,7 @@ BsaComp::resetAvg(ResPtr newBuf)
 		current_->rms = ::sqrt( current_->rms/(double)current_->count );
 	} else if ( current_->count == 0 ) {
 		current_->avg = 0./0.;
+		current_->rms = 0./0.;
 	}
 	if ( newBuf ) {
 		current_ = newBuf;
