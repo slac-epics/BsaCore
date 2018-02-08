@@ -33,7 +33,7 @@ public:
 	{
 	}
 
-	~BsaBuf();
+	virtual ~BsaBuf();
 
 
 	virtual void run();
