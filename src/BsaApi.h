@@ -266,13 +266,16 @@ BSA_DelSimpleSink(
 /*
  * Obtain the timing callback function provided by BSA
  */
-extern "C" int
+int
 BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*));
 
 /*
  * Dump statistics (stdout if a null arg is passed)
+ *
+ * If 'bsaChannel' is NULL then statistics for all
+ * channels are printed.
  */
-extern "C" void
+void
 BSA_DumpChannelStats(BsaChannel bsaChannel, FILE *f);
 
 #ifdef __cplusplus
