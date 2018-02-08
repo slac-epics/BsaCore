@@ -3,7 +3,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#undef BSA_CHANNEL_DEBUG
+#undef  BSA_CHANNEL_DEBUG
 
 BsaResultPtr
 BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
@@ -301,27 +301,27 @@ printf("ChannelImpl::processInput -- got item (pulse id %llu)\n", (unsigned long
 
 		for ( i = 0, msk = 1;  act; i++, (act &= ~msk), msk <<= 1 ) {
 			if ( ! (msk & act) ) {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- not active\n",i);
 #endif
 				continue;
 			}
 
-			if ( slots_[i].comp_.getTimeStamp() == pitem->timeStamp ) {
-#ifdef BSA_CHANNEL_DEBUG
+			tmpPattern = slots_[i].pattern_;
+
+			if ( tmpPattern && tmpPattern->pulseId == pattern->pulseId ) {
+#if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- no change\n",i);
 #endif
 				slots_[i].noChangeCnt_++;
 				continue;
 			}
 
-			tmpPattern = slots_[i].pattern_;
-
 			slots_[i].pattern_ = pbuf->patternGet( pattern );
 
 			// tmpPattern still holds a reference count
 			if ( tmpPattern ) {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pulseId);
 #endif
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
