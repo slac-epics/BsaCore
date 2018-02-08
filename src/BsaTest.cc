@@ -1,4 +1,5 @@
 #include <BsaApi.h>
+#include <BsaAlias.h>
 #include <BsaTimeStamp.h>
 #include <BsaCore.h>
 #include <stdio.h>
@@ -10,10 +11,13 @@
 #include <math.h>
 #include <pthread.h>
 
+#include <mcheck.h>
+
 #define EDEF_MAX 8
 
-static long remaining;
-static long tested;
+class  PatternTestGen;
+
+static PatternTestGen *theGen();
 
 struct EDEF {
 private:
@@ -67,6 +71,12 @@ private:
 public:
 	PatternTestGen();
 
+	~PatternTestGen()
+	{
+		printf("~PatternTestGen\n");
+		mcheck_check_all();
+	}
+
 	static void timerLoop(void *me);
 
 	virtual void
@@ -88,6 +98,98 @@ private:
 	void tick();
 
 };
+
+class Checker {
+private:
+	long            ini_;
+	long            cnt_;
+	BsaAlias::mutex mtx_;
+
+protected:
+	BsaAlias::mutex &getMtx()
+	{
+		return mtx_;
+	}
+
+public:
+	Checker(int ini = 0)
+	: ini_( ini ),
+	  cnt_( 0   )
+	{
+	}
+
+	Checker &operator++()
+	{
+	BsaAlias::Guard lg( mtx_ );
+		++ini_;
+		return *this;
+	}
+
+	virtual void end(int status)
+	{
+	}
+
+	virtual void done(int status )
+	{
+		printf("%ld results tested; SUCCESS\n", ini_);
+		end( status );
+		theGen()->kill();
+	}
+
+	Checker &operator--()
+	{
+	BsaAlias::Guard lg( mtx_ );
+		if ( ini_ == ++cnt_ ) {
+			done( 0 );
+		}
+		return *this;
+	}
+
+
+	Checker &operator+=(int x)
+	{
+	BsaAlias::Guard lg( mtx_ );
+		ini_ += x;
+		return *this;
+	}
+
+	Checker &operator-=(int x)
+	{
+	BsaAlias::Guard lg( mtx_ );
+		cnt_ += x;
+		if ( cnt_ > ini_ ) {
+			throw std::runtime_error("Too many positive results");
+		}
+		if ( cnt_ == ini_ ) {
+			done( 0 );
+		}
+		return *this;
+	}
+};
+
+class ResChecker : public Checker {
+private:
+	int numResMax_;
+public:
+	ResChecker()
+	: numResMax_(0)
+	{
+	}
+
+	virtual void end(int status)
+	{
+		printf("Max result vector received was %d\n", numResMax_);
+	}
+
+	virtual void newMax(int newMax)
+	{
+	BsaAlias::Guard lg( getMtx() );
+		if ( newMax > numResMax_ )
+			numResMax_ = newMax;
+	}
+};
+
+static ResChecker remaining;
 
 class EdefTooOld {};
 class EdefActive {};
@@ -224,15 +326,13 @@ EDEF *edef = (EDEF *)closure;
 
 static void edefResult(BsaChannel ch, BsaResult results, unsigned numResults, void *closure)
 {
-static unsigned numResMax = 0;
 EDEF *edef = (EDEF *)closure;
 unsigned long i;
 unsigned      res;
 unsigned long long v;
 
-if  ( numResults > numResMax ) {
-	numResMax = numResults;
-}
+
+	remaining.newMax( numResults );
 
 for ( res = 0; res < numResults; res++ ) {
 
@@ -254,36 +354,53 @@ for ( res = 0; res < numResults; res++ ) {
 		throw std::runtime_error("Test FAILED -- count + missed != navg");
 	}
 
-	double avg = 0.0;
-	for ( i = 0; i < results[res].count; i++ ) {
-		avg += (double)v;
-		v = v - edef->period();
-	}
-	avg /= (double)i;
+	if ( results[res].count ) {
+		double avg = 0.0;
+		for ( i = 0; i < results[res].count; i++ ) {
+			avg += (double)v;
+			v = v - edef->period();
+		}
+		avg /= (double)i;
 
-	double rms = 0.0;
-	double dif;
-	v = (unsigned long long)results[res].pulseId;
-	for ( i = 0; i < results[res].count; i++ ) {
-		dif  = ((double)v - avg);
-		rms += dif*dif;
-		v = v - edef->period();
-	}
-	rms = ::sqrt(rms/(double)i);
+		double rms = 0.0;
+		double dif;
+		v = (unsigned long long)results[res].pulseId;
+		for ( i = 0; i < results[res].count; i++ ) {
+			dif  = ((double)v - avg);
+			rms += dif*dif;
+			v = v - edef->period();
+		}
+		rms = ::sqrt(rms/(double)i);
 
-	if ( abs(avg - results[res].avg) > 1.0E-10 ) {
-		throw std::runtime_error("Test FAILED -- AVG mismatch");
+		if ( abs(avg - results[res].avg) > 1.0E-10 ) {
+			throw std::runtime_error("Test FAILED -- AVG mismatch");
+		}
+
+		if ( abs(rms - results[res].rms) > 1.0E-10 ) {
+			throw std::runtime_error("Test FAILED -- RMS mismatch");
+		}
+	} else {
+#ifdef VERBOSE
+printf("Zero count:\n");
+	printf("BSA RESULT (on channel %s, EDEF %d)\n", BSA_GetChannelId( ch ), edef->id());
+	printf("  avg %g\n",  results[res].avg);
+	printf("  rms %g\n",  results[res].rms);
+	printf("  cnt %lu\n", results[res].count);
+	printf("  mis %lu\n", results[res].missed);
+	printf("  pid %llu\n", v );
+	printf("  sev %u\n",  results[res].sevr);
+	printf("  sta %u\n",  results[res].stat);
+#endif
+		// test for NaN
+		if ( results[res].avg == results[res].avg ) {
+			throw std::runtime_error("Test FAILED -- AVG with zero count not NAN");
+		}
+		if ( results[res].rms == results[res].rms ) {
+			throw std::runtime_error("Test FAILED -- RMS with zero count not NAN");
+		}
 	}
 
-	if ( abs(rms - results[res].rms) > 1.0E-10 ) {
-		throw std::runtime_error("Test FAILED -- RMS mismatch");
-	}
-
-	if ( ++tested == remaining ) {
-		printf("%ld results tested; SUCCESS\n", tested);
-		printf("Max result vector received was %d\n", numResMax);
-		theGen()->kill();
-	}
+	--remaining;
 
 }
 
@@ -297,6 +414,7 @@ static void edefAbort(BsaChannel ch, const epicsTimeStamp *pts, int status, void
 #endif
 }
 
+
 static BsaSimpleDataSinkStruct dutSink = {
 	OnInit:   edefInit,
 	OnResult: edefResult,
@@ -306,6 +424,7 @@ static BsaSimpleDataSinkStruct dutSink = {
 #define EDEF_0 0
 #define EDEF_1 1
 #define EDEF_2 2
+#define EDEF_3 3
 
 extern "C" unsigned BSA_LD_PATTERNBUF_SZ;
 
@@ -313,19 +432,29 @@ int
 main()
 {
 	BSA_LD_PATTERNBUF_SZ = 4;
-std::vector<EDEF> edefs;
+
+std::vector<EDEF>       edefs;
+std::vector<BsaChannel> chans;
+
+BsaChannel ch      = BSA_CreateChannel("CH1");
+BsaChannel chNoDat = BSA_CreateChannel("NODAT");
+
 unsigned i;
-	edefs.push_back( EDEF(EDEF_0, 10, 2,  1, 130) );
-	edefs.push_back( EDEF(EDEF_1, 13, 3,  3, 130) );
-	edefs.push_back( EDEF(EDEF_2, 17, 29, 4, 13)  );
+	edefs.push_back( EDEF(EDEF_0, 10,  2,  1, 130) );
+	chans.push_back( ch );
+	edefs.push_back( EDEF(EDEF_1, 13,  3,  3, 130) );
+	chans.push_back( ch );
+	edefs.push_back( EDEF(EDEF_2, 17, 29,  4, 13)  );
+	chans.push_back( ch );
+#if 1
+	edefs.push_back( EDEF(EDEF_3, 23,  3,  1, 100) );
+	chans.push_back( chNoDat );
+#endif
 
-BsaChannel ch = BSA_CreateChannel("CH1");
 
-	remaining = 0;
-	tested    = 0;
 	for ( i=0; i<edefs.size(); i++ ) {
 		remaining += edefs[i].nvals();
-		if ( BSA_AddSimpleSink( ch, EDEF_0 + i, &dutSink, &edefs[i], 3 ) ) {
+		if ( BSA_AddSimpleSink( chans[i], EDEF_0 + i, &dutSink, &edefs[i], 3 ) ) {
 			throw std::runtime_error("TEST FAILED (unable to attach sink)");
 		}
 		theGen()->setEdef( edefs[i], EDEF_0 + i );
@@ -337,7 +466,12 @@ BsaChannel ch = BSA_CreateChannel("CH1");
 
 	theGen()->join();
 
-	BSA_DumpChannelStats( ch, NULL );
+	BSA_DumpChannelStats( ch,      NULL );
+	BSA_DumpChannelStats( chNoDat, NULL );
 
-	printf("Leaving\n");
+	printf("Leaving pre-checks\n");
+
+	mcheck_check_all();
+
+	printf("Leaving after checks\n");
 }
