@@ -45,7 +45,7 @@ private:
 	unsigned         id_;
 	epicsTimeStamp   lastTimeout_;
 public:
-	static const uint64_t DFLT_PERIOD_NS = 100ULL*1000000ULL;
+	static const uint64_t DFLT_PERIOD_NS = 300ULL*1000000ULL;
 
 	BsaInpBuf(BsaCore *pcore, unsigned ldSz, const char *name, unsigned id)
 	: BsaBuf<BsaDatum> ( pcore, ldSz, name ),
