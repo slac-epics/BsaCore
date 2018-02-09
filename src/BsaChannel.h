@@ -108,7 +108,6 @@ private:
 	BsaChannelImpl(const BsaChannelImpl&);
 	BsaChannelImpl & operator=(const BsaChannelImpl&);
 
-	
 public:
 	BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<BsaResultPtr> *obuf);
 
@@ -128,7 +127,7 @@ public:
 	evict(PatternBuffer *pbuf, BsaPattern *pattern);
 
 	void
-	timeout();
+	timeout(PatternBuffer *pbuf, epicsTimeStamp *lastTimeout);
 
 	void
 	dump(FILE *f = ::stdout);

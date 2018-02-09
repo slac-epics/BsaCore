@@ -265,25 +265,53 @@ BsaChannelImpl::dump(FILE *f)
 }
 
 void
-BsaChannelImpl::timeout()
+BsaChannelImpl::timeout(PatternBuffer *pbuf, epicsTimeStamp *lastTimeout)
 {
 Lock lg( mtx_ );
 uint64_t    msk;
 BsaEdef     edef;
+BsaPattern *tmpPattern, *prevPattern;
 
 	numTimeouts_++;
 
-	for ( edef = 0, msk = 1; dirtyMask_; edef++, (dirtyMask_ &= ~msk), msk <<= 1 ) {
+	for ( edef = 0, msk = 1; edef < NUM_EDEF_MAX; edef++, msk <<= 1 ) {
+
+		BsaSlot &slot( slots_[edef] );
+
+		// process patterns that are still in the pattern buffer
+		if ( (tmpPattern = slot.pattern_) ) {
+#ifdef BSA_CHANNEL_DEBUG
+			printf("Timeout -- slot pattern PID %d\n", tmpPattern->pulseId);
+#endif
+			prevPattern = pbuf->patternGetNext( tmpPattern, edef );
+		} else {
+			// pattern of last computation has expired
+			prevPattern = pbuf->patternGetOldest( edef );
+		}
+
+		while ( prevPattern && (BsaTimeStamp)prevPattern->timeStamp <= (BsaTimeStamp)*lastTimeout ) {
+#ifdef BSA_CHANNEL_DEBUG
+			printf("Timeout (edef %d) flushing old stuff - found %d\n", edef, prevPattern->pulseId);
+#endif
+			process( edef, prevPattern, 0 );
+			if ( tmpPattern )
+				pbuf->patternPut( tmpPattern );
+			slot.pattern_ = prevPattern;
+			tmpPattern    = prevPattern;
+			prevPattern   = pbuf->patternGetNext( tmpPattern, edef );
+		}
+		if ( prevPattern ) {
+			pbuf->patternPut( prevPattern );
+		}
+
 		if ( ! (msk & dirtyMask_) ) {
 			continue;
 		}
 
-		BsaSlot &slot( slots_[edef] );
-
 		// push finished results to the output buffer but keep the last ongoing computation
 		if ( slot.work_->numResults_ > 0 ) {
 #ifdef BSA_CHANNEL_DEBUG
-printf("Pushing out %d (timeout)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
+			printf("Pushing out %d (timeout)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
 #endif
 			BsaResultPtr buf   = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
@@ -298,6 +326,8 @@ printf("Pushing out %d (timeout)\n", slot.work_->results_[slot.work_->numResults
 		} else {
 			noProgressTimeouts_++;
 		}
+
+		dirtyMask_ &= ~msk;
 	}
 }
 

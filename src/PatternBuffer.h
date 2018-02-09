@@ -82,6 +82,8 @@ private:
 
 	CondVar                            frontUnused_;
 
+	uint64_t                           activeEdefSet_;
+
 protected:
 	virtual bool frontUnused();
 

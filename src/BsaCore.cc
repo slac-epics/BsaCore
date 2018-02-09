@@ -42,9 +42,18 @@ BsaBuf<T>::~BsaBuf()
 }
 
 void
+BsaInpBuf::run()
+{
+epicsTimeGetCurrent( &lastTimeout_ );
+	BsaBuf<BsaDatum>::run();
+}
+
+void
 BsaInpBuf::timeout()
 {
-	getCore()->inputTimeout( this );
+epicsTimeStamp then = lastTimeout_;
+	epicsTimeGetCurrent( &lastTimeout_ );
+	getCore()->inputTimeout( this, &then );
 }
 
 BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
@@ -129,11 +138,11 @@ BsaChannelVec::iterator it;
 }
 
 void
-BsaCore::inputTimeout(BsaInpBuf *pbuf)
+BsaCore::inputTimeout(BsaInpBuf *pbuf, epicsTimeStamp *lastTimeStamp)
 {
 unsigned chid = pbuf->getId();
 	while ( chid < channels_.size() ) {
-		channels_[chid]->timeout();
+		channels_[chid]->timeout( this, lastTimeStamp );
 		chid += NUM_INP_BUFS;
 	}
 }

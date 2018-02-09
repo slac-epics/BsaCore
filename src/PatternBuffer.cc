@@ -5,7 +5,7 @@
 
 #undef  PBUF_DEBUG
 
-#define ALWAYS_AGE_PATTERNS
+#undef  ALWAYS_AGE_PATTERNS
 
 BsaPattern &
 BsaPattern::operator=(const BsaTimingData *p)
@@ -16,7 +16,8 @@ BsaPattern::operator=(const BsaTimingData *p)
 }
 
 PatternBuffer::PatternBuffer(unsigned ldSz, unsigned minfill)
-: RingBufferSync<BsaPattern, const BsaTimingData*>( ldSz, minfill )
+: RingBufferSync<BsaPattern, const BsaTimingData*>( ldSz, minfill ),
+  activeEdefSet_( 0 )
 {
 unsigned i;
 	indexBufs_.reserve( NUM_EDEF_MAX );
@@ -101,6 +102,7 @@ PatternIdx  t = tail();
 
 	for ( i=0, m=1; anyMask; i++, m<<=1 ) {
 		if ( (anyMask & m) ) {
+			activeEdefSet_ |= m;
 			indexBufs_[i]->push_back( t );
 			pat.seqIdx_[i] = indexBufs_[i]->tail();
 			anyMask &= ~m;
@@ -137,6 +139,9 @@ std::vector<FinalizePopCallback*>::iterator it;
 	for ( i=0, m=1; anyMask; i++, m<<=1 ) {
 		if ( (anyMask & m) ) {
 			indexBufs_[i]->pop();
+			if ( 0 == indexBufs_[i]->size() ) {
+				activeEdefSet_ &= ~m;
+			}
 			anyMask &= ~m;
 		}
 	}

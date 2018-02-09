@@ -354,6 +354,17 @@ for ( res = 0; res < numResults; res++ ) {
 		throw std::runtime_error("Test FAILED -- count + missed != navg");
 	}
 
+	if ( strcmp( BSA_GetChannelId( ch ), "NODAT" ) ) {
+		if  ( results[res].count != edef->navg() ) {
+		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %lu\n", edef->id(), v, results[res].count, results[res].missed, edef->navg());
+			throw std::runtime_error("Test FAILED -- count != Navg");
+		}
+	} else {
+		if  ( results[res].count != 0 ) {
+			throw std::runtime_error("Test (nodata) FAILED -- count != 0");
+		}
+	}
+
 	if ( results[res].count ) {
 		double avg = 0.0;
 		for ( i = 0; i < results[res].count; i++ ) {
@@ -446,11 +457,10 @@ unsigned i;
 	chans.push_back( ch );
 	edefs.push_back( EDEF(EDEF_2, 17, 29,  4, 13)  );
 	chans.push_back( ch );
-#if 1
-	edefs.push_back( EDEF(EDEF_3, 23,  3,  1, 100) );
+#if 0
+	edefs.push_back( EDEF(EDEF_3, 2300,  3,  1, 4) );
 	chans.push_back( chNoDat );
 #endif
-
 
 	for ( i=0; i<edefs.size(); i++ ) {
 		remaining += edefs[i].nvals();

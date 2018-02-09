@@ -35,7 +35,6 @@ public:
 
 	virtual ~BsaBuf();
 
-
 	virtual void run();
 
 	virtual void processItem(T *pitem);
@@ -43,7 +42,8 @@ public:
 
 class BsaInpBuf : public BsaBuf<BsaDatum> {
 private:
-	unsigned id_;
+	unsigned         id_;
+	epicsTimeStamp   lastTimeout_;
 public:
 	static const uint64_t DFLT_PERIOD_NS = 100ULL*1000000ULL;
 
@@ -58,6 +58,9 @@ public:
 	{
 		return id_;
 	}
+
+	virtual void
+	run();
 
 	virtual void
 	timeout();
@@ -84,6 +87,8 @@ private:
 	BsaInpBufVec                            inpBufs_;
 	BsaOutBufVec                            outBufs_;
 
+	epicsTimeStamp                          lastTimeout_;
+
 	BsaCore(const BsaCore &);
 	BsaCore &operator=(const BsaCore&);
 
@@ -109,7 +114,7 @@ public:
 	dumpChannelInfo(FILE *f = ::stdout);
 
 	void
-	inputTimeout(BsaInpBuf *inpBuf);
+	inputTimeout(BsaInpBuf *inpBuf, epicsTimeStamp *lastTimeout);
 
 	int
 	storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity);
