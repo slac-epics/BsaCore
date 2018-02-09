@@ -158,7 +158,7 @@ printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
 
 		// If there is a previous result we must send it off
 		if ( slot.work_->numResults_ > 0 ) {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("Pushing out %d (new init)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
 #endif
 			// swap buffers
@@ -211,7 +211,7 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 	bool update  = (pattern->edefUpdateMask | pattern->edefAllDoneMask) & msk;
 
 	if ( avgDone || update ) {
-#ifdef BSA_CHANNEL_DEBUG
+#if defined( BSA_CHANNEL_DEBUG )
 printf("BsaChannelImpl::process (edef %d) --");
 if ( avgDone ) {
 printf(" AVG_DONE");
@@ -230,8 +230,8 @@ printf("\n");
 		    || (   update  && (   slot.work_->numResults_ >  0                )) ) {
 
 			// swap buffers
-#ifdef BSA_CHANNEL_DEBUG
-printf("Pushing out %d (max)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
+#if defined( BSA_CHANNEL_DEBUG )
+printf("Pushing out %d (max %d, num %d)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId, slot.maxResults_, slot.work_->numResults_);
 #endif
 			buf        = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
