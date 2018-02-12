@@ -28,7 +28,6 @@ protected:
 		return mtx_;
 	}
 
-protected:
 	void notifyNotFull()
 	{
 		not_full_.notify_one();

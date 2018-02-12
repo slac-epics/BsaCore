@@ -44,6 +44,7 @@ class BsaInpBuf : public BsaBuf<BsaDatum> {
 private:
 	unsigned         id_;
 	epicsTimeStamp   lastTimeout_;
+	BsaTimeStamp     newestPatternTimeStamp_;
 public:
 	static const uint64_t DFLT_PERIOD_NS = 300ULL*1000000ULL;
 
@@ -58,6 +59,13 @@ public:
 	{
 		return id_;
 	}
+
+	virtual void
+	updatePatternTimeStamp(BsaTimeStamp ts);
+
+	virtual bool
+	checkMinFilled();
+
 
 	virtual void
 	run();

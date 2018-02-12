@@ -1,4 +1,5 @@
 #include <BsaCore.h>
+#include <BsaAlias.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -54,6 +55,34 @@ BsaInpBuf::timeout()
 epicsTimeStamp then = lastTimeout_;
 	epicsTimeGetCurrent( &lastTimeout_ );
 	getCore()->inputTimeout( this, &then );
+}
+
+bool
+BsaInpBuf::checkMinFilled()
+{
+	// hold data items in the input queue until a pattern has
+	// arrived that has a timestamp equal or later than the data
+	// timestamp.
+	return size() > 0 && back().timeStamp <= newestPatternTimeStamp_;
+}
+
+void
+BsaInpBuf::updatePatternTimeStamp(BsaTimeStamp newTs)
+{
+bool doNotify;
+	{
+	BsaAlias::Guard lg( getMtx() );
+		if ( size() > 0 ) {
+			BsaTimeStamp dataTs = back().timeStamp;
+			doNotify = dataTs > newestPatternTimeStamp_ && dataTs <= newTs;
+		} else {
+			doNotify = false;
+		}
+		newestPatternTimeStamp_ = newTs;
+	}
+	if ( doNotify ) {
+		notifyMinFilled();
+	}
 }
 
 BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
@@ -121,7 +150,19 @@ BsaChannel found = findChannel( name );
 void
 BsaCore::pushTimingData(const BsaTimingData *pattern)
 {
+BsaInpBufVec::iterator it;
+
 	push_back( pattern );
+
+	// Even if the pattern ends up not being stored in the ring-
+	// buffer (because there are no active edefs) we still
+	// notify input buffers of the arrival timestamp so that
+	// data items queued in the input buffer(s) are released.
+
+	for ( it = inpBufs_.begin(); it != inpBufs_.end(); ++it ) {
+		(*it)->updatePatternTimeStamp( pattern->timeStamp );
+	}
+
 #ifdef BSA_CORE_DEBUG
 	printf("Entered pattern for pulse ID %llu (size %lu)\n", (unsigned long long)pattern->pulseId, (unsigned long) size());
 #endif
