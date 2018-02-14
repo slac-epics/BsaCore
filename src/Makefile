@@ -34,6 +34,7 @@ BsaCore_SRCS += BsaChannel.cc
 BsaCore_SRCS += BsaCore.cc
 BsaCore_SRCS += BsaApi.cc
 BsaCore_SRCS += BsaPosixClock.cc
+BsaCore_SRCS += BsaCoreFactory.cc
 BsaCore_SRCS += drvBsaCore.c
 
 BsaTest_SRCS += BsaTest.cc

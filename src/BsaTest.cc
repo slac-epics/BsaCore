@@ -437,12 +437,14 @@ static BsaSimpleDataSinkStruct dutSink = {
 #define EDEF_2 2
 #define EDEF_3 3
 
-extern "C" unsigned BSA_LD_PATTERNBUF_SZ;
+extern "C" int BSA_ConfigSetLdPatternBufSz(unsigned);
 
 int
 main()
 {
-	BSA_LD_PATTERNBUF_SZ = 4;
+	if ( BSA_ConfigSetLdPatternBufSz( 4 ) ) {
+		throw std::runtime_error("Test FAILED -- unable to config pattern buffer size");
+	}
 
 std::vector<EDEF>       edefs;
 std::vector<BsaChannel> chans;
@@ -470,11 +472,17 @@ unsigned i;
 		theGen()->setEdef( edefs[i], EDEF_0 + i );
 	}
 
-	BSA_TimingCallbackRegister(RegisterBsaTimingCallback);
+	if ( BSA_TimingCallbackRegister(RegisterBsaTimingCallback) ) {
+		throw std::runtime_error("TEST FAILED (unable to register timing callback)");
+	}
 
 	theGen()->start();
 
 	theGen()->join();
+
+	if ( BSA_TimingCallbackUnregister() ) {
+		throw std::runtime_error("TEST FAILED (unable to register timing callback)");
+	}
 
 	BSA_DumpChannelStats( ch,      NULL );
 	BSA_DumpChannelStats( chNoDat, NULL );

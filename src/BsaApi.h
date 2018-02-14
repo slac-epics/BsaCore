@@ -270,6 +270,12 @@ int
 BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*));
 
 /*
+ * Notify BSA that the timing callbacks will no longer be called
+ */
+int
+BSA_TimingCallbackUnregister();
+
+/*
  * Dump statistics (stdout if a null arg is passed)
  *
  * If 'bsaChannel' is NULL then statistics for all

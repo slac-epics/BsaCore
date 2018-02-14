@@ -1,32 +1,53 @@
 #include <BsaApi.h>
 #include <BsaCore.h>
+#include <BsaCoreFactory.h>
 #include <BsaAlias.h>
+#include <pthread.h>
+#include <string.h>
 
-extern "C" {
-unsigned BSA_LD_PATTERNBUF_SZ = 9;
-};
+typedef BsaAlias::shared_ptr<BsaCoreFactory> BsaConfigPtr;
 
-class BsaCoreWrapper {
-private:
-	BsaAlias::shared_ptr<BsaCore> core_;
-public:
-	BsaCoreWrapper(unsigned ldBufSz, unsigned minfill)
-	{
-		core_ = BsaAlias::shared_ptr<BsaCore>( new BsaCore( ldBufSz, minfill ) );
-		core_->start();
-	}
+static BsaConfigPtr  theConfig_;
+static BsaCorePtr    theCore_;
 
-	BsaCore *operator()()
-	{
-		return core_.get();
-	}
-};
-
-static BsaCore *theCore()
+static void createTheConfig()
 {
-unsigned PATTERNBUF_MINFILL = (1<<(BSA_LD_PATTERNBUF_SZ - 1));
-static BsaCoreWrapper theCore_( BSA_LD_PATTERNBUF_SZ, PATTERNBUF_MINFILL );
-	return theCore_();
+	theConfig_ = BsaAlias::make_shared<BsaCoreFactory>();
+}
+
+static BsaConfigPtr theConfig()
+{
+static pthread_once_t once = PTHREAD_ONCE_INIT;
+int    err;
+	if ( (err = pthread_once( &once, createTheConfig )) ) {
+		throw std::runtime_error(std::string("pthread_once failed: ") + std::string( strerror(err) ) );
+	}
+	return theConfig_;
+}
+
+static void createTheCore()
+{
+	theCore_ = theConfig()->create();
+	theCore_->start();
+}
+
+static BsaCorePtr theCore()
+{
+static pthread_once_t once = PTHREAD_ONCE_INIT;
+int    err;
+	if ( (err = pthread_once( &once, createTheCore )) ) {
+		throw std::runtime_error(std::string("pthread_once failed: ") + std::string( strerror(err) ) );
+	}
+	return theCore_;
+}
+
+extern "C" int
+BSA_ConfigSetLdPatternBufSz(unsigned val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setLdBufSz( val );
+	return 0;
 }
 
 extern "C" BsaChannel
@@ -116,11 +137,28 @@ BSA_TimingCallbackGet()
 	return theBsaTimingCallback;
 }
 
+static BsaCorePtr extRef_;
+
 extern "C" int
 BSA_TimingCallbackRegister(int (*registrar)(BsaTimingCallback, void*))
 {
-	return registrar( BSA_TimingCallbackGet(), theCore() );
+	if ( extRef_ ) {
+		/* already registered */
+		return -1;
+	}
+	extRef_ = theCore();
+	return registrar( BSA_TimingCallbackGet(), extRef_.get() );
 }
+
+extern "C" int
+BSA_TimingCallbackUnregister()
+{
+	if ( ! extRef_ )
+		return -1;
+	extRef_.reset();
+	return 0;
+}
+
 
 extern "C" void
 BSA_ReleaseResults(
