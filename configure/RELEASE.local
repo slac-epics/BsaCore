@@ -19,6 +19,7 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
+TIMINGAPI_MODULE_VERSION=timingapi-git
 
 # ==========================================================
 # External Support module path definitions
@@ -33,6 +34,7 @@
 #
 # If your build fails, look for these paths in your build output
 # ==========================================================
+TIMINGAPI  = $(EPICS_MODULES)/timingApi/$(TIMINGAPI_MODULE_VERSION)
 
 # Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths
 EPICS_BASE = $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
