@@ -102,7 +102,7 @@ private:
 
 public:
 	BsaCore(unsigned pbufLdSz, unsigned pbufMinFill);
-	~BsaCore();
+	virtual ~BsaCore();
 	BsaChannel createChannel(const char *name);
 	BsaChannel findChannel(const char *name);
 
