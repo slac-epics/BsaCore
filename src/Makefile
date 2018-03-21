@@ -18,6 +18,23 @@ endif
 # priority inheritance). If c++11 is not enabled then USE_PTHREADS is enabled.
 USR_CPPFLAGS += -DUSE_PTHREADS=1
 
+
+# ======================================================
+# PATH TO "NON EPICS" EXTERNAL PACKAGES: USER LIBRARIES
+# ======================================================
+# Support for BOOST
+# ======================================================
+boost_system_DIR = $(BOOST_LIB)
+# ======================================================
+
+# =======================================================
+# LINK "NON EPICS" EXTERNAL PACKAGE LIBRARIES STATICALLY
+# In this case ==> BOOST
+# =======================================================
+USR_LIBS_Linux += boost_system
+# =======================================================
+
+
 # Build an IOC support library
 LIBRARY_IOC += BsaCore
 

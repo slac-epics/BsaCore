@@ -19,9 +19,8 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
-TIMINGAPI_MODULE_VERSION=R0.6
 
-# ==========================================================
+# ================================================================================
 # External Support module path definitions
 #
 # If any of these macros expand to a path which
@@ -33,8 +32,19 @@ TIMINGAPI_MODULE_VERSION=R0.6
 # included in the compiler link path for that architecture.
 #
 # If your build fails, look for these paths in your build output
+# ===============================================================================
+LOCAL_EPICS_MODULES=/afs/slac/g/lcls/epics/iocTop/users/ernesto/gitSandBox
+
+TIMINGAPI_MODULE_VERSION=timingApi-git
+
 # ==========================================================
-TIMINGAPI  = $(EPICS_MODULES)/timingApi/$(TIMINGAPI_MODULE_VERSION)
+# Define module paths using pattern
+# FOO = $(EPICS_MODULES)/foo/$(FOO_MODULE_VERSION)
+#  or
+# FOO = /Full/Path/To/Development/Version
+# ==========================================================
+TIMINGAPI=$(LOCAL_EPICS_MODULES)/timingApi/$(TIMINGAPI_MODULE_VERSION)
+
 
 # Set EPICS_BASE last so it appears last in the DB, DBD, INCLUDE, and LIB search paths
 EPICS_BASE = $(EPICS_SITE_TOP)/base/$(BASE_MODULE_VERSION)
