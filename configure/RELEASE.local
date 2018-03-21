@@ -19,7 +19,7 @@
 # Don't set your version to anything such as "test" that
 # could match a directory name.
 # ==========================================================
-TIMINGAPI_MODULE_VERSION=timingapi-git
+TIMINGAPI_MODULE_VERSION=R0.6
 
 # ==========================================================
 # External Support module path definitions
