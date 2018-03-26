@@ -28,7 +28,6 @@ namespace BsaAlias {
 	using namespace            std;
 #else
 	using namespace            boost;
-	using namespace            boost::movelib;
 #endif
 #if __cplusplus > 199711L && ! USE_PTHREADS
 	typedef unique_lock<std::mutex>                            Guard;
