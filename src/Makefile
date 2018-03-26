@@ -7,7 +7,11 @@ include $(TOP)/configure/CONFIG
 # Use c++11 atomic types and smart pointers (if c++11 is not supported by
 # the compiler then we'll fall back on boost).
 # If c++11 is enabled then see below for USE_PTHREADS.
+ifeq ($(HAVE_CXX11),YES)
 USR_CXXFLAGS += -std=c++11
+else
+INCLUDES     += $(addprefix -I,$(BOOST_INCLUDE))
+endif
 
 # USE_PTHREADS uses the pthread based mutex API and enables priority inheritance
 # If USE_PTHREADS is undefined or 0 then c++ 11 mutexes are used (without
