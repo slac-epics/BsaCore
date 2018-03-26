@@ -47,6 +47,7 @@ unsigned edef;
 	numTimeouts_        = 0;
 	numTimeoutFlushes_  = 0;
 	noProgressTimeouts_ = 0;
+	outOfOrderItems_    = 0;
 
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
@@ -259,6 +260,7 @@ BsaChannelImpl::dump(FILE *f)
 	fprintf(f,"     # items dropped because of 'pattern too new': %lu\n", patternTooNew_        );
 	fprintf(f,"     # items dropped because of 'pattern too old': %lu\n", patternTooOld_        );
 	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
+	fprintf(f,"     # items dropped because out of order        : %lu\n", outOfOrderItems_      );
 	fprintf(f,"     # timeout ticks                             : %lu\n", numTimeouts_          );
 	fprintf(f,"     # results flushed by timeouts               : %lu\n", numTimeoutFlushes_    );
 	fprintf(f,"     # timeouts with no progress                 : %lu\n", noProgressTimeouts_   );
@@ -342,6 +344,12 @@ BsaEdef     i;
 	try {
 		Lock lg( mtx_ );
 
+		if ( pitem->timeStamp <= lastTs_ ) {
+			++outOfOrderItems_;
+			return;
+		}
+
+		lastTs_ = pitem->timeStamp;
 
 		pattern = pbuf->patternGet( pitem->timeStamp );
 
@@ -360,14 +368,6 @@ printf("processInput(%d) -- not active\n",i);
 			}
 
 			tmpPattern = slots_[i].pattern_;
-
-			if ( tmpPattern && tmpPattern->pulseId == pattern->pulseId ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("processInput(%d) -- no change\n",i);
-#endif
-				slots_[i].noChangeCnt_++;
-				continue;
-			}
 
 			if ( (lstPattern = tmpPattern) ) {
 				pbuf->patternGet( lstPattern );
@@ -412,7 +412,7 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
 				pbuf->patternPut( tmpPattern );
 
-				if ( ! prevPattern || 1 ) {
+				if ( ! prevPattern ) {
 					// should not happen as at least 'pattern' should be found
 					fprintf(stderr,"Inconsistency for EDEF %d\n", (unsigned)i);
 					fprintf(stderr,"Old Slot Pattern:\n");

@@ -63,7 +63,6 @@ typedef struct BsaResultItem {
 class BsaSlot {
 public:
 	BsaPattern               *pattern_;
-	unsigned                  noChangeCnt_;
 	BsaResultPtr              work_;
 	unsigned                  currentRes_;
 	BsaComp                   comp_;
@@ -95,12 +94,14 @@ private:
 	unsigned long                               numTimeouts_;
 	unsigned long                               numTimeoutFlushes_;
 	unsigned long                               noProgressTimeouts_;
+	unsigned long                               outOfOrderItems_;
 
 	typedef BsaAlias::Guard                     Lock;
 	BsaAlias::mutex                             mtx_;
 	BsaAlias::mutex                             omtx_;
 
 	bool                                        deferred_;
+	BsaTimeStamp                                lastTs_;
 
 	std::string                                 name_;
 	BsaChid                                     chid_;
