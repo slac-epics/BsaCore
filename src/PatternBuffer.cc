@@ -241,3 +241,70 @@ uint64_t pid;
 		throw std::runtime_error("Pattern buffer overrun");
 	}
 }
+
+void
+BsaPattern::dump(FILE *f, int indent, int idx) const
+{
+int      i;
+uint64_t anyMask = edefInitMask | edefActiveMask;
+uint64_t m;
+
+	fprintf(stderr,"%*s(%4d)PID:%16llu, TS:%9lu/%9lu\n",
+		indent,"",
+        idx,
+		(unsigned long long)pulseId,
+		(unsigned long)timeStamp.secPastEpoch,
+		(unsigned long)timeStamp.nsec );
+	indent += 6;
+	fprintf(stderr,"%*si%16llx a%16llx d%16llx\n",
+		indent,"",
+		(unsigned long long)edefInitMask,
+		(unsigned long long)edefActiveMask,
+		(unsigned long long)edefAvgDoneMask);
+	for ( i=0, m=1ULL; i<NUM_EDEF_MAX; i++, m<<=1 ) {
+		if ( (i % 16) == 0 ) {
+			fprintf(f,"\n%*s",indent,"");
+		}
+		if ( (m & anyMask) ) {
+			fprintf(f,"[%3d]",seqIdx_[i]);
+		} else {
+			fprintf(f,"[xxx]");
+		}
+	}
+	fputc('\n',f);
+}
+
+
+void
+PatternBuffer::dump(FILE *f)
+{
+Lock lg( getMtx() );
+
+unsigned long i, j, s;
+int           indent = 2;
+
+std::vector<IndexBufPtr>::const_iterator it;
+
+	s = (unsigned long)size();
+	fprintf(f,"Head: %d, Tail: %d, Size %ld\n", head(), tail(), s);
+	fprintf(f,"Patterns:\n");
+	for ( i=0; i<s; i++ ) {
+		this->operator[](i).dump(f, indent, i);
+	}
+	fprintf(f,"IndexBufs:\n");
+	for ( it = indexBufs_.begin(), i=0; it != indexBufs_.end(); ++it, ++i ) {
+		s = (unsigned long)(*it)->size();
+		fprintf(f,"%*s%ld: H: %ld, T: %ld, S: %ld",
+			indent, "", i,
+			(unsigned long)(*it)->head(),
+			(unsigned long)(*it)->tail(),
+			s);
+		for ( j=0; j<s; j++ ) {
+			if ( (j % 16) == 0 ) {
+				fprintf(f,"\n%*s",indent+2,"");
+			}
+			fprintf(f, "%5d", (*it)->operator[](j));
+		}
+		fputc('\n',f);
+	}
+}

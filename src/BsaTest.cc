@@ -487,6 +487,8 @@ unsigned i;
 	BSA_DumpChannelStats( ch,      NULL );
 	BSA_DumpChannelStats( chNoDat, NULL );
 
+	BSA_DumpPatternBuffer( stdout );
+
 	printf("Leaving pre-checks\n");
 
 	mcheck_check_all();

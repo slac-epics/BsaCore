@@ -335,6 +335,7 @@ void
 BsaChannelImpl::processInput(PatternBuffer *pbuf, BsaDatum *pitem)
 {
 BsaPattern *pattern, *prevPattern, *tmpPattern;
+BsaPattern *lstPattern;
 uint64_t    msk, act;
 BsaEdef     i;
 
@@ -366,6 +367,10 @@ printf("processInput(%d) -- no change\n",i);
 #endif
 				slots_[i].noChangeCnt_++;
 				continue;
+			}
+
+			if ( (lstPattern = tmpPattern) ) {
+				pbuf->patternGet( lstPattern );
 			}
 
 			slots_[i].pattern_ = pbuf->patternGet( pattern );
@@ -407,10 +412,23 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
 				pbuf->patternPut( tmpPattern );
 
-				if ( ! prevPattern ) {
+				if ( ! prevPattern || 1 ) {
 					// should not happen as at least 'pattern' should be found
+					fprintf(stderr,"Inconsistency for EDEF %d\n", (unsigned)i);
+					fprintf(stderr,"Old Slot Pattern:\n");
+					if ( lstPattern ) {
+						lstPattern->dump( stderr, 2, 0 );
+					}
+					fprintf(stderr,"New Slot Pattern:\n");
+					slots_[i].pattern_->dump( stderr, 2, 0 );
+					
+					pbuf->dump( stderr );
 					throw std::runtime_error("no previous pattern found");
 				}
+			}
+
+			if ( lstPattern ) {
+				pbuf->patternPut( lstPattern );
 			}
 
 			pbuf->patternPut( prevPattern );

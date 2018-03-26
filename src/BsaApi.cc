@@ -182,3 +182,10 @@ BSA_DumpChannelStats(
 		channel->dump( f );
 	}
 }
+
+
+extern "C" void
+BSA_DumpPatternBuffer(FILE *f)
+{
+	theCore()->PatternBuffer::dump( f );
+}

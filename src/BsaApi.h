@@ -284,6 +284,9 @@ BSA_TimingCallbackUnregister();
 void
 BSA_DumpChannelStats(BsaChannel bsaChannel, FILE *f);
 
+void
+BSA_DumpPatternBuffer(FILE *f);
+
 #ifdef __cplusplus
 }
 #endif

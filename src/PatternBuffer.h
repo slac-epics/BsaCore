@@ -6,6 +6,7 @@
 #include <BsaTimeStamp.h>
 #include <RingBufferSync.h>
 #include <BsaAlias.h>
+#include <stdio.h>
 
 typedef uint16_t PatternIdx;
 
@@ -52,6 +53,8 @@ public:
 	{
 		return refCount_.load();
 	}
+
+	void dump(FILE *f, int indent, int idx) const;
 
 	friend class PatternBuffer;
 } BsaPattern;
@@ -108,6 +111,8 @@ public:
 	virtual void patternPut(BsaPattern *pattern);
 
 	virtual void push_back(const BsaTimingData *pat);
+
+	virtual void dump(FILE *);
 
 };
 
