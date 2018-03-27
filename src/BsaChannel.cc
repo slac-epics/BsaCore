@@ -381,7 +381,6 @@ void
 BsaChannelImpl::processInput(PatternBuffer *pbuf, BsaDatum *pitem)
 {
 BsaPattern *pattern, *prevPattern, *tmpPattern;
-BsaPattern *lstPattern;
 uint64_t    msk, act;
 BsaEdef     i;
 
@@ -398,8 +397,6 @@ BsaEdef     i;
 			++outOfOrderItems_;
 			return;
 		}
-
-		BsaTimeStamp lastTs = lastTs_;
 
 		lastTs_ = pitem->timeStamp;
 
@@ -421,10 +418,6 @@ printf("processInput(%d) -- not active\n",i);
 
 			tmpPattern = slots_[i].pattern_;
 
-			if ( (lstPattern = tmpPattern) ) {
-				pbuf->patternGet( lstPattern );
-			}
-
 			// tmpPattern still holds a reference count
 			if ( tmpPattern ) {
 #if defined( BSA_CHANNEL_DEBUG )
@@ -435,9 +428,6 @@ printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pul
 					// of a pattern timeout. In this case the slot pattern can be
 					// more recent than the lastTs_...
 					timedoutPatternDrops_++;
-					if ( lstPattern ) {
-						pbuf->patternPut( lstPattern );
-					}
 					continue;
 				}
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
@@ -476,13 +466,8 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 
 				if ( ! prevPattern ) {
 					// should not happen as at least 'pattern' should be found
-					debug(stderr, pbuf, lastTs, i, lstPattern);
 					throw std::runtime_error("no previous pattern found");
 				}
-			}
-
-			if ( lstPattern ) {
-				pbuf->patternPut( lstPattern );
 			}
 
 			pbuf->patternPut( prevPattern );
