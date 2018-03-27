@@ -20,9 +20,10 @@ private:
 
 public:
 	BsaPattern(const BsaTimingData *p)
-	: BsaTimingData( *p    ),
-	  refCount_    ( 0     )
+	: refCount_    ( 0     )
 	{
+		if ( p )
+			*this = p;
 	}
 
 	BsaPattern()

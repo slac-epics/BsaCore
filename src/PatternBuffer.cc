@@ -10,13 +10,17 @@
 BsaPattern &
 BsaPattern::operator=(const BsaTimingData *p)
 {
-	refCount_ = 0;
+	if ( refCount_.load() != 0 ) {
+		fprintf(stderr,"REFCNT: %d\n", refCount_.load());
+		throw std::runtime_error("BsaPattern::operator=() -- refcount was not zero");
+	}
+	refCount_                 = 0;
 	*(BsaTimingData*)this     = *p;
 	return *this;
 }
 
 PatternBuffer::PatternBuffer(unsigned ldSz, unsigned minfill)
-: RingBufferSync<BsaPattern, const BsaTimingData*>( ldSz, minfill ),
+: RingBufferSync<BsaPattern, const BsaTimingData*>( ldSz, 0, minfill ),
   activeEdefSet_( 0 )
 {
 unsigned i;
