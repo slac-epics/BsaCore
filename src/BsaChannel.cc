@@ -425,13 +425,21 @@ printf("processInput(%d) -- not active\n",i);
 				pbuf->patternGet( lstPattern );
 			}
 
-			slots_[i].pattern_ = pbuf->patternGet( pattern );
-
 			// tmpPattern still holds a reference count
 			if ( tmpPattern ) {
 #if defined( BSA_CHANNEL_DEBUG )
 printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pulseId);
 #endif
+				if ( pitem->timeStamp <= tmpPattern->timeStamp ) {
+					// we can get here if the slot_[i].pattern_ got updated because
+					// of a pattern timeout. In this case the slot pattern can be
+					// more recent than the lastTs_...
+					timedoutPatternDrops_++;
+					if ( lstPattern ) {
+						pbuf->patternPut( lstPattern );
+					}
+					continue;
+				}
 				prevPattern = pbuf->patternGetNext( tmpPattern, i );
 				// release this slot's pattern; it will be updated with
 				// the current one.
@@ -443,6 +451,8 @@ printf("processInput(%d) -- found no slot pattern\n", i);
 				// pattern of last computation has expired
 				prevPattern = pbuf->patternGetOldest( i );
 			}
+
+			slots_[i].pattern_ = pbuf->patternGet( pattern );
 
 			if ( ! prevPattern ) {
 				// should not happen as at least 'pattern' should be found
@@ -466,17 +476,7 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 
 				if ( ! prevPattern ) {
 					// should not happen as at least 'pattern' should be found
-					epicsTimeStamp lastTsEpics = lastTs;
-					fprintf(stderr,"Inconsistency for EDEF %d, channel %p, CHID %d\n", (unsigned)i, this, getChid());
-					fprintf(stderr,"Last Timestamp was %9lu/%9lu\n", (unsigned long)lastTsEpics.secPastEpoch, (unsigned long)lastTsEpics.nsec );
-					fprintf(stderr,"Old Slot Pattern:\n");
-					if ( lstPattern ) {
-						lstPattern->dump( stderr, 2, 0 );
-					}
-					fprintf(stderr,"New Slot Pattern:\n");
-					slots_[i].pattern_->dump( stderr, 2, 0 );
-					
-					pbuf->dump( stderr );
+					debug(stderr, pbuf, lastTs, i, lstPattern);
 					throw std::runtime_error("no previous pattern found");
 				}
 			}
