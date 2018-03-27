@@ -253,14 +253,16 @@ int      i;
 uint64_t anyMask = edefInitMask | edefActiveMask;
 uint64_t m;
 
-	fprintf(stderr,"%*s(%4d)PID:%16llu, TS:%9lu/%9lu\n",
+	fprintf(f,"%*s(%4d)PID:%16llu, TS:%9lu/%9lu, ref %d, this %p\n",
 		indent,"",
         idx,
 		(unsigned long long)pulseId,
 		(unsigned long)timeStamp.secPastEpoch,
-		(unsigned long)timeStamp.nsec );
+		(unsigned long)timeStamp.nsec,
+		getRef(),
+		this );
 	indent += 6;
-	fprintf(stderr,"%*si%16llx a%16llx d%16llx\n",
+	fprintf(f,"%*si%16llx a%16llx d%16llx\n",
 		indent,"",
 		(unsigned long long)edefInitMask,
 		(unsigned long long)edefActiveMask,
