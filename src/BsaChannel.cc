@@ -5,6 +5,9 @@
 
 #undef  BSA_CHANNEL_DEBUG
 
+// ld of depth of timestamp log; disabled if 0
+#define BSA_TSLOG_LD 0
+
 BsaResultPtr
 BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
 {
@@ -38,7 +41,8 @@ BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<Bs
   dirtyMask_( 0            ),
   deferred_ ( false        ),
   name_     ( name         ),
-  chid_     ( chid         )
+  chid_     ( chid         ),
+  itemTs_   ( BSA_TSLOG_LD )
 {
 unsigned edef;
   	patternTooNew_      = 0;
@@ -343,6 +347,12 @@ BsaEdef     i;
 
 	try {
 		Lock lg( mtx_ );
+
+#if BSA_TSLOG_LD > 0
+		if ( itemTs_.full() )
+			itemTs_.pop();
+		itemTs_.push_back( pitem->timeStamp );
+#endif
 
 		if ( pitem->timeStamp <= lastTs_ ) {
 			++outOfOrderItems_;

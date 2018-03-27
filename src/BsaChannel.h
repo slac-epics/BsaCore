@@ -106,6 +106,9 @@ private:
 	std::string                                 name_;
 	BsaChid                                     chid_;
 
+	// for debugging
+	RingBuffer<BsaTimeStamp>                    itemTs_;
+
 	BsaChannelImpl(const BsaChannelImpl&);
 	BsaChannelImpl & operator=(const BsaChannelImpl&);
 
