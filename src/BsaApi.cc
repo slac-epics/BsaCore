@@ -187,5 +187,8 @@ BSA_DumpChannelStats(
 extern "C" void
 BSA_DumpPatternBuffer(FILE *f)
 {
+	if ( ! f ) {
+		f = stdout;
+	}
 	theCore()->PatternBuffer::dump( f );
 }
