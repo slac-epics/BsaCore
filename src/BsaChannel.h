@@ -95,6 +95,8 @@ private:
 	unsigned long                               numTimeoutFlushes_;
 	unsigned long                               noProgressTimeouts_;
 	unsigned long                               outOfOrderItems_;
+	unsigned long                               deferredCnt_;
+	unsigned long                               timedoutPatternDrops_;
 
 	typedef BsaAlias::Guard                     Lock;
 	BsaAlias::mutex                             mtx_;
@@ -147,6 +149,9 @@ public:
 
 	BsaChid
 	getChid();
+
+	void
+	debug(FILE *f, PatternBuffer *pbuf, BsaTimeStamp lastTs, unsigned edef, BsaPattern *lstPattern);
 
 	virtual
 	~BsaChannelImpl();

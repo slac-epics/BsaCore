@@ -45,13 +45,15 @@ BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<Bs
   itemTs_   ( BSA_TSLOG_LD )
 {
 unsigned edef;
-  	patternTooNew_      = 0;
-	patternTooOld_      = 0;
-	patternNotFnd_      = 0;
-	numTimeouts_        = 0;
-	numTimeoutFlushes_  = 0;
-	noProgressTimeouts_ = 0;
-	outOfOrderItems_    = 0;
+	patternTooNew_        = 0;
+	patternTooOld_        = 0;
+	patternNotFnd_        = 0;
+	numTimeouts_          = 0;
+	numTimeoutFlushes_    = 0;
+	noProgressTimeouts_   = 0;
+	outOfOrderItems_      = 0;
+	deferredCnt_          = 0;
+	timedoutPatternDrops_ = 0;
 
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
@@ -119,7 +121,7 @@ printf("evict -- pattern put\n");
 			// Keep the this slot locked until the pattern is truly gone so
 			// that 'processInput()' cannot find this pattern anymore.
 			// The 'PatternBuffer' waits for all references to the oldest pattern
-			// being released and while waiting the PatternBuffer is (cannot) be
+			// being released and while waiting the PatternBuffer is (cannot be)
 			// locked.
 			// If we wouldn't hold 'mtx_' then 'processInput' could find this
 			// pattern again and believe it to be expired since it would find a
@@ -139,8 +141,10 @@ else printf("evict -- newer pattern\n");
 #endif
 	}
 
-	if ( deferred_ )
+	if ( deferred_ ) {
+		++deferredCnt_;
 		lg.release();
+	}
 }
 
 void
@@ -264,10 +268,12 @@ BsaChannelImpl::dump(FILE *f)
 	fprintf(f,"     # items dropped because of 'pattern too new': %lu\n", patternTooNew_        );
 	fprintf(f,"     # items dropped because of 'pattern too old': %lu\n", patternTooOld_        );
 	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
+	fprintf(f,"     # items dropped because of 'pattern timeout': %lu\n", timedoutPatternDrops_ );
 	fprintf(f,"     # items dropped because out of order        : %lu\n", outOfOrderItems_      );
 	fprintf(f,"     # timeout ticks                             : %lu\n", numTimeouts_          );
 	fprintf(f,"     # results flushed by timeouts               : %lu\n", numTimeoutFlushes_    );
 	fprintf(f,"     # timeouts with no progress                 : %lu\n", noProgressTimeouts_   );
+	fprintf(f,"     # deferred evicts                           : %lu\n", deferredCnt_          );
 }
 
 void
@@ -335,6 +341,40 @@ BsaPattern *tmpPattern, *prevPattern;
 
 		dirtyMask_ &= ~msk;
 	}
+}
+
+void
+BsaChannelImpl::debug(FILE *f, PatternBuffer *pbuf, BsaTimeStamp lastTs, unsigned edef, BsaPattern *lstPattern)
+{
+static BsaAlias::mutex dbgMtx;
+
+Lock lg( dbgMtx );
+
+BsaPattern *newPattern = slots_[edef].pattern_;
+
+	// should not happen as at least 'pattern' should be found
+	epicsTimeStamp lastTsEpics = lastTs;
+	fprintf(f,"Inconsistency for EDEF %d, channel %p, CHID %d, deferred %lu\n", edef, this, getChid(), deferredCnt_);
+	fprintf(f,"Last Timestamp was %9lu/%9lu\n", (unsigned long)lastTsEpics.secPastEpoch, (unsigned long)lastTsEpics.nsec );
+	fprintf(f,"Old Slot Pattern:\n");
+	if ( lstPattern ) {
+		lstPattern->dump( f, 2, 0 );
+	}
+	fprintf(f,"New Slot Pattern:\n");
+	if ( newPattern ) {
+		newPattern->dump( f, 2, 0 );
+	}
+
+	pbuf->dump( f );
+#if BSA_TSLOG_LD > 0
+	fprintf(f,"Item Timestamps:\n");
+	for ( unsigned xx = 0; xx < itemTs_.size(); ++xx ) {
+		epicsTimeStamp ts = itemTs_[xx];
+		fprintf(f,"  %9lu/%9lu\n", (unsigned long)ts.secPastEpoch, (unsigned long)ts.nsec );
+
+	}
+#endif
+	dump( f );
 }
 
 void
@@ -529,7 +569,7 @@ uint64_t  m = (1ULL<<edef);
 	}
 
 	if ( ! (m & inUseMask_) ) {
-		fprintf(stderr,"Sinks Not Connected (channel %s, edef %d)\n", getName(), edef);
+		fprintf(stderr,"Sink Not Connected (channel %s, edef %d)\n", getName(), edef);
 		return -1;
 	}
 
