@@ -349,6 +349,8 @@ BsaEdef     i;
 			return;
 		}
 
+		BsaTimeStamp lastTs = lastTs_;
+
 		lastTs_ = pitem->timeStamp;
 
 		pattern = pbuf->patternGet( pitem->timeStamp );
@@ -414,7 +416,9 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 
 				if ( ! prevPattern ) {
 					// should not happen as at least 'pattern' should be found
-					fprintf(stderr,"Inconsistency for EDEF %d\n", (unsigned)i);
+					epicsTimeStamp lastTsEpics = lastTs;
+					fprintf(stderr,"Inconsistency for EDEF %d, channel %p, CHID %d\n", (unsigned)i, this, getChid());
+					fprintf(stderr,"Last Timestamp was %9lu/%9lu\n", (unsigned long)lastTsEpics.secPastEpoch, (unsigned long)lastTsEpics.nsec );
 					fprintf(stderr,"Old Slot Pattern:\n");
 					if ( lstPattern ) {
 						lstPattern->dump( stderr, 2, 0 );
