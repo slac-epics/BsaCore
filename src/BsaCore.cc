@@ -176,6 +176,9 @@ BsaChannelVec::iterator it;
 		// evict cached pointers from all channels
 		(*it)->evict( this, pattern );
 	}
+	if ( pattern->getRef() != 0 ) {
+		throw std::runtime_error("Pattern refcount not zero when retired");
+	}
 }
 
 void
