@@ -40,6 +40,7 @@ public:
 	}
 
 	BsaPattern &operator=(const BsaTimingData*);
+	BsaPattern &operator=(const BsaPattern &);
 
 	void incRef()
 	{

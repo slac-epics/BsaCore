@@ -12,10 +12,22 @@ BsaPattern::operator=(const BsaTimingData *p)
 {
 	if ( refCount_.load() != 0 ) {
 		fprintf(stderr,"REFCNT: %d\n", refCount_.load());
-		throw std::runtime_error("BsaPattern::operator=() -- refcount was not zero");
+		throw std::runtime_error("BsaPattern::operator=(const BsaTimingData *) -- refcount was not zero");
 	}
-	refCount_                 = 0;
 	*(BsaTimingData*)this     = *p;
+	refCount_                 = 0;
+	return *this;
+}
+
+BsaPattern &
+BsaPattern::operator=(const BsaPattern &rhs)
+{
+	if ( refCount_.load() != 0 ) {
+		fprintf(stderr,"REFCNT: %d\n", refCount_.load());
+		throw std::runtime_error("BsaPattern::operator=(const BsaPattern&) -- refcount was not zero");
+	}
+	*(BsaTimingData*)this     = rhs;
+	refCount_                 = 0;
 	return *this;
 }
 
