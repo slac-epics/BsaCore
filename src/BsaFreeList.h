@@ -26,7 +26,7 @@ private:
 	BsaFreeList(const BsaFreeList&);
 	BsaFreeList &operator=(const BsaFreeList&);
 
-	static const std::size_t MAX_UNLIMITED = 1000;
+	static const std::size_t MAX_UNLIMITED = -1;
 
 	BsaFreeList(std::size_t maxBlks = MAX_UNLIMITED)
 	: numBlks_(       0 ),
