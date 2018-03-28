@@ -56,6 +56,7 @@ typedef struct BsaResultItem {
 	{
 	}
 
+	// release the 'self_' reference (for use from C code!)
 	void
 	release()
 	{
@@ -64,8 +65,6 @@ typedef struct BsaResultItem {
 		}
 	}
 
-
-	// release the 'self_' reference (for use from C code!)
 	static void         release(BsaResult);
 
 	static BsaResultPtr alloc( BsaChid chid, BsaEdef edef );
@@ -111,6 +110,7 @@ private:
 	unsigned long                               outOfOrderItems_;
 	unsigned long                               deferredCnt_;
 	unsigned long                               timedoutPatternDrops_;
+	unsigned long                               itemsStored_;
 
 	typedef BsaAlias::Guard                     Lock;
 	BsaAlias::mutex                             mtx_;

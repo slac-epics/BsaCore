@@ -42,6 +42,7 @@ BsaChannelImpl::BsaChannelImpl(const char *name, BsaChid chid, RingBufferSync<Bs
   inUseMask_( 0            ),
   dirtyMask_( 0            ),
   deferred_ ( false        ),
+  lastTs_   ( 0            ),
   name_     ( name         ),
   chid_     ( chid         ),
   itemTs_   ( BSA_TSLOG_LD )
@@ -56,6 +57,7 @@ unsigned edef;
 	outOfOrderItems_      = 0;
 	deferredCnt_          = 0;
 	timedoutPatternDrops_ = 0;
+	itemsStored_          = 0;
 
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
@@ -267,6 +269,7 @@ BsaChannelImpl::dump(FILE *f)
 	fprintf(f,"BSA Channel[%d] (%s) Dump\n", chid_, getName()                                   );
 	fprintf(f,"  EDEF in use mask 0x%llx\n", (unsigned long long)inUseMask_                     );
 	fprintf(f,"  Counters:\n");
+	fprintf(f,"     # items stored in BSA                       : %lu\n", itemsStored_          );
 	fprintf(f,"     # items dropped because of 'pattern too new': %lu\n", patternTooNew_        );
 	fprintf(f,"     # items dropped because of 'pattern too old': %lu\n", patternTooOld_        );
 	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
@@ -385,6 +388,7 @@ BsaChannelImpl::processInput(PatternBuffer *pbuf, BsaDatum *pitem)
 BsaPattern *pattern, *prevPattern, *tmpPattern;
 uint64_t    msk, act;
 BsaEdef     i;
+bool        stored = false;
 
 	try {
 		Lock lg( mtx_ );
@@ -475,7 +479,11 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 			pbuf->patternPut( prevPattern );
 
 			process( i, pattern, pitem );
+			stored = true;
 		}
+
+		if ( stored )
+			itemsStored_++;
 
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {
