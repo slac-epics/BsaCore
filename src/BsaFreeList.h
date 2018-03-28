@@ -26,7 +26,7 @@ private:
 	BsaFreeList(const BsaFreeList&);
 	BsaFreeList &operator=(const BsaFreeList&);
 
-	static const std::size_t MAX_UNLIMITED = -1;
+	static const std::size_t MAX_UNLIMITED = 1000;
 
 	BsaFreeList(std::size_t maxBlks = MAX_UNLIMITED)
 	: numBlks_(       0 ),
@@ -124,6 +124,18 @@ public:
 		return xxx;
 #endif
 	}
+
+	void
+	printStats(FILE *f = stdout)
+	{
+		fprintf(f,"BsaFreeList<%lu>: max #blocks %lu, tot #blocks %lu, freelist #blocks %lu\n",
+			(unsigned long)BLKSZ, 
+			(unsigned long)maxBlks_, 
+			(unsigned long)numBlks_, 
+			(unsigned long)lstBlks_
+		);
+	}
+
 };
 
 template <typename T>
@@ -165,31 +177,31 @@ struct BsaPoolAllocator {
 		typedef BsaPoolAllocator<U> other;
 	};
 
-	static SP
+	SP
 	make()
 	{
-		return BsaAlias::shared_ptr<T>( BsaAlias::allocate_shared<T>( BsaPoolAllocator<T>() ) );
+		return BsaAlias::shared_ptr<T>( BsaAlias::allocate_shared<T>( *this ) );
 	}
 
 	template <typename A0>
-	static SP
+	SP
 	make(A0 a0)
 	{
-		return SP( BsaAlias::allocate_shared<T>( BsaPoolAllocator<T>(), a0 ) );
+		return SP( BsaAlias::allocate_shared<T>( *this, a0 ) );
 	}
 
 	template <typename A0, typename A1>
-	static BsaAlias::shared_ptr<T>
+	BsaAlias::shared_ptr<T>
 	make(A0 a0, A1 a1)
 	{
-		return SP( BsaAlias::allocate_shared<T>( BsaPoolAllocator<T>(), a0, a1 ) );
+		return SP( BsaAlias::allocate_shared<T>( *this, a0, a1 ) );
 	}
 
 	template <typename A0, typename A1, typename A2>
-	static BsaAlias::shared_ptr<T>
+	BsaAlias::shared_ptr<T>
 	make(A0 a0, A1 a1, A2 a2)
 	{
-		return SP( BsaAlias::allocate_shared<T>( BsaPoolAllocator<T>(), a0, a1, a2 ) );
+		return SP( BsaAlias::allocate_shared<T>( *this, a0, a1, a2 ) );
 	}
 		
 };

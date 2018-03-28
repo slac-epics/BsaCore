@@ -37,6 +37,7 @@ typedef BsaAlias::shared_ptr<BsaResultItem> BsaResultPtr;
 
 typedef struct BsaResultItem {
 	BsaResultPtr            self_;
+	BsaAlias::atomic<int>   refc_;
 	BsaChid                 chid_;
 	BsaEdef                 edef_;
 	bool                    isInit_;
@@ -47,12 +48,22 @@ typedef struct BsaResultItem {
 	BsaResultItem(
 		BsaChid        chid,
 		BsaEdef        edef)
-	: chid_      ( chid  ),
+	: refc_      (    0  ),
+	  chid_      ( chid  ),
 	  edef_      ( edef  ),
 	  isInit_    ( false ),
 	  numResults_(    0  )
 	{
 	}
+
+	void
+	release()
+	{
+		if ( 1 == refc_.fetch_sub( 1 ) ) {
+			self_.reset();
+		}
+	}
+
 
 	// release the 'self_' reference (for use from C code!)
 	static void         release(BsaResult);
@@ -62,12 +73,15 @@ typedef struct BsaResultItem {
 
 class BsaSlot {
 public:
+	typedef std::pair<BsaSimpleDataSinkStruct, void*> Sink;
+	typedef std::vector<Sink>                         SinkVec;
+
 	BsaPattern               *pattern_;
 	BsaResultPtr              work_;
 	unsigned                  currentRes_;
 	BsaComp                   comp_;
-	void                     *usrPvt_;
-	BsaSimpleDataSinkStruct   callbacks_;
+	
+	SinkVec                   callbacks_;
 	unsigned                  maxResults_;
 
 	BsaSlot(BsaChid chid, BsaEdef edef);
@@ -155,6 +169,9 @@ public:
 
 	virtual
 	~BsaChannelImpl();
+
+	static void
+	printResultPoolStats(FILE *f);
 };
 
 #endif

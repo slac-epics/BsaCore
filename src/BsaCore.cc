@@ -226,6 +226,7 @@ void
 BsaCore::dumpChannelInfo(FILE *f)
 {
 BsaChannelVec::iterator it;
+	BsaChannelImpl::printResultPoolStats( f );
 	for ( it = channels_.begin(); it != channels_.end(); ++it ) {
 		(*it)->dump( f );
 	}

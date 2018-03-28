@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #undef  BSA_CHANNEL_DEBUG
 
@@ -11,7 +12,9 @@
 BsaResultPtr
 BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
 {
-	return BsaResultPtr( BsaPoolAllocator<BsaResultItem>::make(chid, edef) );
+static BsaPoolAllocator<BsaResultItem> all;
+
+	return BsaResultPtr( all.make(chid, edef) );
 }
 
 void
@@ -21,8 +24,7 @@ uintptr_t resultsField = reinterpret_cast<uintptr_t>( r );
 uintptr_t resultsOff   = reinterpret_cast<uintptr_t>( &static_cast<BsaResultItem*>(0)->results_[0] );
 
 BsaResultItem *basePtr = reinterpret_cast<BsaResultItem*>(resultsField - resultsOff);
-
-	basePtr->self_.reset();
+	basePtr->release();
 }
 
 
@@ -505,13 +507,21 @@ BsaResultPtr buf;
 BsaSlot     &slot( slots_[buf->edef_] );
 
 	if ( (1<<buf->edef_) & inUseMask_ ) {
+		BsaSlot::SinkVec::iterator it;
 		if ( buf->isInit_ ) {
-			slot.callbacks_.OnInit( this, &buf->initTs_, slot.usrPvt_ );
+			for ( it = slot.callbacks_.begin(); it != slot.callbacks_.end(); ++it ) {
+				it->first.OnInit( this, &buf->initTs_, it->second );
+			}
 		}
 		// since we pass the buffer to C code we must keep a shared_ptr reference.
 		// We do that simply by storing a shared_ptr in the result itself.
 		buf->self_ = buf;
-		slot.callbacks_.OnResult( this, &buf->results_[0], buf->numResults_, slot.usrPvt_ );
+		buf->refc_.fetch_add(1);
+		for ( it = slot.callbacks_.begin(); it != slot.callbacks_.end(); ++it ) {
+			buf->refc_.fetch_add(1);
+			it->first.OnResult( this, &buf->results_[0], buf->numResults_, it->second );
+		}
+		buf->release();
 	}
 }
 
@@ -520,22 +530,26 @@ BsaChannelImpl::addSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure, uns
 {
 Lock      lg( omtx_ );
 uint64_t  m = (1ULL<<edef);
+unsigned  lim;
 
 	if ( edef >= NUM_EDEF_MAX ) {
 		throw std::runtime_error("BsaChannelImpl::addSink() Invalid EDEF (too big)");
 	}
 
+	// If we are attaching a new sink with a reduced 'maxResults' then
+	// we may lose some data (if currently there are results beyond the new limit)
 	if ( (m & inUseMask_) ) {
-		fprintf(stderr,"Multiple Sinks ATM Not Supported (channel %s, edef %d)\n", getName(), edef);
-		return -1;
+		lim = slots_[edef].maxResults_;
+	} else {
+		lim = BSA_RESULTS_MAX ;
 	}
 
-	if ( maxResults > BSA_RESULTS_MAX )
-		maxResults = BSA_RESULTS_MAX;
+	if ( 0 == maxResults || maxResults > lim ) {
+		maxResults = lim;
+	}
 
 	slots_[edef].maxResults_ = maxResults;
-	slots_[edef].usrPvt_     = closure;
-	slots_[edef].callbacks_  = *sink;
+	slots_[edef].callbacks_.push_back( BsaSlot::Sink( *sink, closure ) );
 
 	inUseMask_ |= m;
 
@@ -547,20 +561,34 @@ int
 BsaChannelImpl::delSink(BsaEdef edef, BsaSimpleDataSink sink, void *closure)
 {
 Lock      lg( omtx_ );
-uint64_t  m = (1ULL<<edef);
+uint64_t  m   = (1ULL<<edef);
+bool      fnd = false;
+
+BsaSlot::SinkVec::iterator it;
 
 	if ( edef >= NUM_EDEF_MAX ) {
 		throw std::runtime_error("BsaChannelImpl::delSink() Invalid EDEF (too big)");
 	}
 
-	if ( ! (m & inUseMask_) ) {
+	if ( (m & inUseMask_) ) {
+		for ( it = slots_[edef].callbacks_.begin(); it != slots_[edef].callbacks_.end(); ++it ) {
+			if ( 0 == memcmp( &it->first, sink, sizeof(*sink) ) && it->second == closure ) {
+				slots_[edef].callbacks_.erase( it );
+				fnd = true;
+				break;
+			}
+		}
+	}
+
+	if ( ! fnd ) {
 		fprintf(stderr,"Sink Not Connected (channel %s, edef %d)\n", getName(), edef);
 		return -1;
 	}
-
-	slots_[edef].maxResults_ = BSA_RESULTS_MAX;
-
-	inUseMask_ &= ~m;
+	
+	if ( slots_[edef].callbacks_.size() == 0 ) {
+		slots_[edef].maxResults_ = BSA_RESULTS_MAX;
+		inUseMask_              &= ~m;
+	}
 
 	return 0;
 }
@@ -569,4 +597,14 @@ BsaChid
 BsaChannelImpl::getChid()
 {
 	return chid_;
+}
+
+void
+BsaChannelImpl::printResultPoolStats(FILE *f)
+{
+/* FIXME -- the allocator is rebound to hold the shared_ptr control block + the item
+ *          and thus the size is not correct.
+ *          How to figure out the correct template parameter???
+	BsaFreeList<sizeof(BsaResultItem)>::thePod()->printStats( f );
+ */
 }
