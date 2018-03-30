@@ -45,7 +45,13 @@ BsaBuf<T>::~BsaBuf()
 void
 BsaInpBuf::run()
 {
-epicsTimeGetCurrent( &lastTimeout_ );
+	// We don't have a current time yet (and the epics clock might
+	// be different from the timing clock).
+	// We could use 'timingGetCurBsaPattern()' from the timingAPI
+	// but that's ill-defined and not implemented currently (neither
+	// by tprPattern nor event).
+	// Hey - let's use epicsTimeGetEvent...
+	epicsTimeGetEvent( &lastTimeout_, 1 );
 	BsaBuf<BsaDatum>::run();
 }
 
@@ -53,7 +59,7 @@ void
 BsaInpBuf::timeout()
 {
 epicsTimeStamp then = lastTimeout_;
-	epicsTimeGetCurrent( &lastTimeout_ );
+	lastTimeout_  = newestPatternTimeStamp_;
 	getCore()->inputTimeout( this, &then );
 }
 
