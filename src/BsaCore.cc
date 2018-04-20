@@ -2,8 +2,10 @@
 #include <BsaAlias.h>
 #include <string.h>
 #include <stdio.h>
+#include <BsaDebug.h>
 
-#undef  BSA_CORE_DEBUG
+#define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_CORE,msg)
+typedef unsigned long long dull;
 
 template<>
 void
@@ -169,9 +171,7 @@ BsaInpBufVec::iterator it;
 		(*it)->updatePatternTimeStamp( pattern->timeStamp );
 	}
 
-#ifdef BSA_CORE_DEBUG
-	printf("Entered pattern for pulse ID %llu (size %lu)\n", (unsigned long long)pattern->pulseId, (unsigned long) size());
-#endif
+	DBG("Entered pattern for pulse ID %llu (size %lu)\n", (dull)pattern->pulseId, (unsigned long) size());
 }
 
 void
@@ -212,6 +212,7 @@ BsaCore::storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat
 BsaChid  chid = pchannel->getChid();
 unsigned idx  = chid % NUM_INP_BUFS;
 	// non-blocking store
+	DBG("BsaCore::storeData (chid %d), TSLOW: %x, value: %g\n", chid, ts.nsec, value);
 	return ! inpBufs_[idx]->push_back( BsaDatum( ts, value, status, severity, chid ), false );
 }
 

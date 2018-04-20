@@ -4,6 +4,7 @@
 #include <BsaAlias.h>
 #include <pthread.h>
 #include <string.h>
+#include <BsaDebug.h>
 
 #include <alarm.h>
 
@@ -11,6 +12,13 @@ typedef BsaAlias::shared_ptr<BsaCoreFactory> BsaConfigPtr;
 
 static BsaConfigPtr  theConfig_;
 static BsaCorePtr    theCore_;
+
+#ifdef BSA_CORE_DEBUG
+extern "C" {
+int   bsaCoreDebug     = BSA_CORE_DEBUG;
+FILE *bsaCoreDebugFile = stdout;
+};
+#endif
 
 static void createTheConfig()
 {

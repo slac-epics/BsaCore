@@ -1,13 +1,16 @@
 #include <BsaChannel.h>
+#include <BsaDebug.h>
 #include <stdexcept>
 #include <math.h>
 #include <stdint.h>
 #include <string.h>
 
-#undef  BSA_CHANNEL_DEBUG
+#define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_CHANNEL,msg)
+typedef unsigned long long dull;
 
 // ld of depth of timestamp log; disabled if 0
 #define BSA_TSLOG_LD 0
+
 
 BsaResultPtr
 BsaResultItem::alloc(BsaChid chid, BsaEdef edef)
@@ -20,8 +23,10 @@ static BsaPoolAllocator<BsaResultItem> all;
 void
 BsaResultItem::release(BsaResult r)
 {
+BsaResultItem *dummy   = static_cast<BsaResultItem*>((uintptr_t)0);
+
 uintptr_t resultsField = reinterpret_cast<uintptr_t>( r );
-uintptr_t resultsOff   = reinterpret_cast<uintptr_t>( &static_cast<BsaResultItem*>(0)->results_[0] );
+uintptr_t resultsOff   = reinterpret_cast<uintptr_t>( &(dummy->results_[0]) );
 
 BsaResultItem *basePtr = reinterpret_cast<BsaResultItem*>(resultsField - resultsOff);
 	basePtr->release();
@@ -98,30 +103,20 @@ uint64_t msk, act;
 
 	act = pattern->edefActiveMask | pattern->edefInitMask;
 
-#ifdef BSA_CHANNEL_DEBUG
-printf("evict -- enter \n");
-#endif
+	DBG("evict -- enter \n");
 	Lock lg( mtx_ );
-#ifdef BSA_CHANNEL_DEBUG
-printf("      -- locked\n");
-#endif
+	DBG("      -- locked\n");
 
 	for ( edef = 0, msk = 1;  act; edef++, (act &= ~msk), msk <<= 1 ) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("Evicting edef %d (act %llu, msk %llu)\n", edef, (unsigned long long)act, (unsigned long long)msk);
-#endif
+		DBG("Evicting edef %d, chid %d (act %llu, msk %llu)\n", edef, chid_, (unsigned long long)act, (unsigned long long)msk);
 		if ( pattern == slots_[edef].pattern_ ) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("evict -- found pattern\n");
-#endif
+			DBG("evict -- found pattern\n");
 			// The pattern associated with the last computation done for this edef
 			// is about to expire. The computation has been done, so there are no
 			// lost data at this point but we must release the 'pattern_'.
 			slots_[edef].pattern_ = 0;
 			pbuf->patternPut( pattern );
-#ifdef BSA_CHANNEL_DEBUG
-printf("evict -- pattern put\n");
-#endif
+			DBG("evict -- pattern put\n");
 			// Keep the this slot locked until the pattern is truly gone so
 			// that 'processInput()' cannot find this pattern anymore.
 			// The 'PatternBuffer' waits for all references to the oldest pattern
@@ -132,17 +127,15 @@ printf("evict -- pattern put\n");
 			// 'pattern_ == 0' condition.
 			deferred_ = true;
 		} else if ( ! slots_[edef].pattern_ ) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("evict -- no pattern\n");
-#endif
+			DBG("evict -- no pattern\n");
 			// the last computation on this slot was done in the past. We must
 			// examine this pattern and account for it before we can evict it
 			process( edef, pattern, 0 );
-		} // else: nothing to do; the computation is up-to-date (= more recent than this pattern)
-          //       and everything up to slots_[edef].pattern_ has been accounted for already
-#ifdef BSA_CHANNEL_DEBUG
-else printf("evict -- newer pattern\n");
-#endif
+		} else {
+			// else: nothing to do; the computation is up-to-date (= more recent than this pattern)
+			//       and everything up to slots_[edef].pattern_ has been accounted for already
+			DBG("evict -- newer pattern\n");
+		}
 	}
 
 	if ( deferred_ ) {
@@ -159,21 +152,15 @@ BsaSevr  edefSevr;
 
 BsaSlot &slot( slots_[edef] );
 
-#ifdef BSA_CHANNEL_DEBUG
-printf("BsaChannelImpl::process (edef %d)\n", edef);
-#endif
+	DBG("BsaChannelImpl::process (edef %d, chid %d)\n", edef, chid_);
 
 	if ( pattern->edefInitMask & msk ) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("BsaChannelImpl::process (edef %d) -- INIT\n", edef);
-#endif
+		DBG("BsaChannelImpl::process (edef %d, chid %d) -- INIT\n", edef, chid_);
 		BsaResultPtr buf;
 
 		// If there is a previous result we must send it off
 		if ( slot.work_->numResults_ > 0 ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("Pushing out %d (new init)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
-#endif
+			DBG("Pushing out %llu (new init)\n", (dull)slot.work_->results_[slot.work_->numResults_-1].pulseId);
 			// swap buffers
 			buf        = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
@@ -199,9 +186,7 @@ printf("Pushing out %d (new init)\n", slot.work_->results_[slot.work_->numResult
 
 	if ( pattern->edefActiveMask & msk ) {
 		if ( item ) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
-#endif
+			DBG("BsaChannelImpl::process (edef %d, chid %d) -- ACTIVE (adding data; %g)\n", edef, chid_, item->val);
 			if ( pattern->edefMinorMask & msk ) {
 				edefSevr = SEVR_MIN;
 			} else if ( pattern->edefMajorMask & msk ) {
@@ -212,9 +197,7 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (adding data)\n", edef);
 
 			slot.comp_.addData( item->val, item->timeStamp, pattern->pulseId, edefSevr, item->sevr, item->stat );
 		} else {
-#ifdef BSA_CHANNEL_DEBUG
-printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
-#endif
+			DBG("BsaChannelImpl::process (edef %d, chid %d) -- ACTIVE (missed)\n", edef, chid_);
 			slot.comp_.miss(pattern->timeStamp, pattern->pulseId);
 		}
 		dirtyMask_ |= msk;
@@ -224,28 +207,24 @@ printf("BsaChannelImpl::process (edef %d) -- ACTIVE (missed)\n", edef);
 	bool update  = (pattern->edefUpdateMask | pattern->edefAllDoneMask) & msk;
 
 	if ( avgDone || update ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("BsaChannelImpl::process (edef %d) --");
-if ( avgDone ) {
-printf(" AVG_DONE");
-}
-if ( pattern->edefUpdateMask & msk ) {
-printf(" UPDATE");
-}
-if ( pattern->edefAllDoneMask & msk ) {
-printf(" ALL_DONE");
-}
-printf("\n");
-#endif
+		DBG("BsaChannelImpl::process (edef %d, chid %d) --", edef, chid_);
+		if ( avgDone ) {
+			DBG(" AVG_DONE (%g)", slot.work_->results_[slot.work_->numResults_].avg);
+		}
+		if ( pattern->edefUpdateMask & msk ) {
+			DBG(" UPDATE");
+		}
+		if ( pattern->edefAllDoneMask & msk ) {
+			DBG(" ALL_DONE");
+		}
+		DBG("\n");
 		BsaResultPtr buf;
 
 		if (   (   avgDone && ( ++slot.work_->numResults_ >= slot.maxResults_ ))
 		    || (   update  && (   slot.work_->numResults_ >  0                )) ) {
 
 			// swap buffers
-#if defined( BSA_CHANNEL_DEBUG )
-printf("Pushing out %d (max %d, num %d)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId, slot.maxResults_, slot.work_->numResults_);
-#endif
+			DBG("Pushing out edef %d, chid %d, %llu (max %d, num %d)\n", edef, chid_, (dull)slot.work_->results_[slot.work_->numResults_-1].pulseId, slot.maxResults_, slot.work_->numResults_);
 			buf        = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
 		}
@@ -297,9 +276,7 @@ BsaPattern *tmpPattern, *prevPattern;
 
 		// process patterns that are still in the pattern buffer
 		if ( (tmpPattern = slot.pattern_) ) {
-#ifdef BSA_CHANNEL_DEBUG
-			printf("Timeout -- slot pattern PID %d\n", tmpPattern->pulseId);
-#endif
+			DBG("Timeout chid %d -- slot pattern PID %llu\n", chid_, (dull)tmpPattern->pulseId);
 			prevPattern = pbuf->patternGetNext( tmpPattern, edef );
 		} else {
 			// pattern of last computation has expired
@@ -307,9 +284,7 @@ BsaPattern *tmpPattern, *prevPattern;
 		}
 
 		while ( prevPattern && (BsaTimeStamp)prevPattern->timeStamp <= (BsaTimeStamp)*lastTimeout ) {
-#ifdef BSA_CHANNEL_DEBUG
-			printf("Timeout (edef %d) flushing old stuff - found %d\n", edef, prevPattern->pulseId);
-#endif
+			DBG("Timeout (edef %d, chid %d) flushing old stuff - found %llu\n", edef, chid_, (dull)prevPattern->pulseId);
 			process( edef, prevPattern, 0 );
 			if ( tmpPattern )
 				pbuf->patternPut( tmpPattern );
@@ -327,9 +302,7 @@ BsaPattern *tmpPattern, *prevPattern;
 
 		// push finished results to the output buffer but keep the last ongoing computation
 		if ( slot.work_->numResults_ > 0 ) {
-#ifdef BSA_CHANNEL_DEBUG
-			printf("Pushing out %d (timeout)\n", slot.work_->results_[slot.work_->numResults_-1].pulseId);
-#endif
+			DBG("Pushing out (edef %d, chid %d) %llu (timeout)\n", edef, chid_, (dull)slot.work_->results_[slot.work_->numResults_-1].pulseId);
 			BsaResultPtr buf   = slot.work_;
 			slot.work_ = BsaResultItem::alloc( chid_, edef );
 
@@ -408,17 +381,13 @@ bool        stored = false;
 
 		pattern = pbuf->patternGet( pitem->timeStamp );
 
-#if defined( BSA_CHANNEL_DEBUG )
-printf("ChannelImpl::processInput -- got item (pulse id %llu)\n", (unsigned long long) pattern->pulseId);
-#endif
+		DBG("ChannelImpl::processInput(chid %d) -- got item (pulse id %llu), val %g\n", chid_, (dull) pattern->pulseId, pitem->val);
 
 		act = pattern->edefActiveMask;
 
 		for ( i = 0, msk = 1;  act; i++, (act &= ~msk), msk <<= 1 ) {
 			if ( ! (msk & act) ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("processInput(%d) -- not active\n",i);
-#endif
+				DBG("processInput(chid %d) -- edef %d not active\n", chid_, i);
 				continue;
 			}
 
@@ -426,9 +395,7 @@ printf("processInput(%d) -- not active\n",i);
 
 			// tmpPattern still holds a reference count
 			if ( tmpPattern ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pulseId);
-#endif
+			DBG("processInput(chid %d) -- edef %d found slot pattern (pid %llu)\n", chid_, i, (dull)tmpPattern->pulseId);
 				if ( pitem->timeStamp <= tmpPattern->timeStamp ) {
 					// we can get here if the slot_[i].pattern_ got updated because
 					// of a pattern timeout. In this case the slot pattern can be
@@ -441,9 +408,7 @@ printf("processInput(%d) -- found slot pattern (pid %llu)\n", i, tmpPattern->pul
 				// the current one.
 				pbuf->patternPut( tmpPattern );
 			} else {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("processInput(%d) -- found no slot pattern\n", i);
-#endif
+				DBG("processInput(chid %d) -- edef %d found no slot pattern\n", chid_, i);
 				// pattern of last computation has expired
 				prevPattern = pbuf->patternGetOldest( i );
 			}
@@ -460,9 +425,11 @@ printf("processInput(%d) -- found no slot pattern\n", i);
 
 
 			while ( prevPattern != pattern ) {
-#if defined( BSA_CHANNEL_DEBUG )
-printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i, (unsigned long long)prevPattern->pulseId, (unsigned long long)pattern->pulseId);
-#endif
+				DBG("processInput(chid %d) -- edef %d catching up (prev_pattern %llu, pattern %llu)\n",
+				    chid_,                    
+				    i,
+				    (unsigned long long)prevPattern->pulseId,
+				    (unsigned long long)pattern->pulseId);
 
 				process( i, prevPattern, 0 );
 
@@ -487,19 +454,13 @@ printf("processInput(%d) -- catching up (prev_pattern %llu, pattern %llu)\n", i,
 
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("ProcessInput: pattern too new (%llu)\n", (unsigned long long)pitem->timeStamp);
-#endif
+		DBG("ProcessInput(chid %d): pattern too new (%llu)\n", chid_, (unsigned long long)pitem->timeStamp);
 		patternTooNew_++;
 	} catch (PatternExpired &e) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("ProcessInput: pattern too old (%llu)\n", (unsigned long long)pitem->timeStamp);
-#endif
+		DBG("ProcessInput(chid %d): pattern too old (%llu)\n", chid_, (unsigned long long)pitem->timeStamp);
 		patternTooOld_++;
 	} catch (PatternNotFound &e) {
-#ifdef BSA_CHANNEL_DEBUG
-printf("ProcessInput: pattern not fnd (%llu)\n", (unsigned long long)pitem->timeStamp);
-#endif
+		DBG("ProcessInput(chid %d): pattern not fnd (%llu)\n", chid_, (unsigned long long)pitem->timeStamp);
 		patternNotFnd_++;
 	}
 }

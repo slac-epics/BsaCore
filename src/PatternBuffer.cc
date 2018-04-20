@@ -1,9 +1,11 @@
 #include <PatternBuffer.h>
+#include <BsaDebug.h>
 #include <stdexcept>
 
 #undef  PBUF_PARANOIA
 
-#undef  PBUF_DEBUG
+#define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_PATTERN,msg)
+typedef unsigned long long dull;
 
 #undef  ALWAYS_AGE_PATTERNS
 
@@ -135,14 +137,10 @@ unsigned    i;
 uint64_t    anyMask = pat.edefInitMask | pat.edefActiveMask;
 uint64_t    m;
 
-#ifdef PBUF_DEBUG
-printf("finalizePop -- enter\n");
-#endif
+	DBG("finalizePop -- enter\n");
 
 	while ( ! frontUnused() ) {
-#ifdef PBUF_DEBUG
-printf("finalizePop -- waiting\n");
-#endif
+		DBG("finalizePop -- waiting\n");
 		frontUnused_.wait( *lp ); 
 	}
 
@@ -178,9 +176,7 @@ Lock lg( getMtx() );
 	if ( ! pat || ! ( (pat->edefInitMask | pat->edefActiveMask) & (1<<edef)) )
 		return 0;
 
-#if defined( PBUF_DEBUG )
-printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->head());
-#endif
+	DBG("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->head());
 
 	unsigned idx = ( (pat->seqIdx_[edef] - indexBufs_[edef]->head()) & mask() );
 
@@ -196,9 +192,7 @@ printf("seqIdx: %u, indexBuf head %u\n", pat->seqIdx_[edef], indexBufs_[edef]->h
 		// no newer active pattern available
 		return 0;
 	}
-#if defined( PBUF_DEBUG )
-printf("indexBufs[%d], %d, pattern buf head %d\n", idx, (*indexBufs_[edef])[idx], head());
-#endif
+	DBG("indexBufs[%d], %d, pattern buf head %d\n", idx, (*indexBufs_[edef])[idx], head());
 	BsaPattern *rval = & (*this)[ (*indexBufs_[edef])[idx] - head() ];
 	rval->incRef();
 	return rval;
@@ -240,19 +234,19 @@ uint64_t pid;
 	}
 #endif
 
-#ifdef PBUF_DEBUG
+#ifdef BSA_CORE_DEBUG
 	{
 	Lock lg( getMtx() );
-		printf("      pushing pattern (pid %llu, front %llu)\n", (unsigned long long)pat->pulseId, (unsigned long long)front().pulseId);
+		DBG("      pushing pattern (pid %llu, front %llu)\n", (dull)pat->pulseId, (dull)front().pulseId);
 	}
 #endif
 
 	if ( ! RingBufferSync<BsaPattern, const BsaTimingData*>::push_back( pat , false ) ) {
-#ifdef PBUF_DEBUG
+#ifdef BSA_CORE_DEBUG
 		Lock lg( getMtx() );
-		printf("Buffer overrun\n");
-		printf("Front PID    %llu\n", (unsigned long long)front().pulseId);
-		printf("Front refcnt %u\n",   front().getRef());
+		DBG("Buffer overrun\n");
+		DBG("Front PID    %llu\n", (dull)front().pulseId);
+		DBG("Front refcnt %u\n",   front().getRef());
 #endif
 		throw std::runtime_error("Pattern buffer overrun");
 	}

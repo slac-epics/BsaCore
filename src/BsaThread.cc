@@ -6,8 +6,9 @@
 #include <signal.h>
 #include <stdexcept>
 #include <errno.h>
+#include <BsaDebug.h>
 
-#undef  BSA_THREAD_DEBUG
+#define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_THREADS,msg)
 
 class BsaThreadWrapper {
 private:
@@ -73,18 +74,14 @@ BsaThread::BsaThread(const char *nam)
 
 BsaThread::~BsaThread()
 {
-#ifdef BSA_THREAD_DEBUG
-	printf("Destroying %s\n", getName());
-#endif
+	DBG("Destroying %s\n", getName());
 	stop();
 }
 
 void
 BsaThread::start()
 {
-#ifdef BSA_THREAD_DEBUG
-	printf("Starting %s\n", getName());
-#endif
+	DBG("Starting %s\n", getName());
 	tid_ = Thread( new BsaThreadWrapper( this ) );
 }
 
@@ -97,9 +94,7 @@ int st;
 		fprintf(stderr, "%s\n", strerror(st));
 		throw std::runtime_error("pthread_cancel failed");
 	}
-#ifdef BSA_THREAD_DEBUG
-	printf("Thread %s killed\n", getName());
-#endif
+	DBG("Thread %s killed\n", getName());
 }
 
 void
@@ -107,16 +102,12 @@ BsaThread::join()
 {
 int st;
 	pthread_t tid = tid_->native_handle();
-#ifdef BSA_THREAD_DEBUG
-	printf("Joining %s\n", getName());
-#endif
+	DBG("Joining %s\n", getName());
 	if ( (st = pthread_join( tid, NULL )) ) {
 		fprintf(stderr, "%s\n", strerror(st));
 		throw std::runtime_error("pthread_join failed");
 	}
-#ifdef BSA_THREAD_DEBUG
-	printf("Thread %s joined\n", getName());
-#endif
+	DBG("Thread %s joined\n", getName());
 	tid_.reset();
 }
 
@@ -124,9 +115,7 @@ int st;
 void
 BsaThread::stop()
 {
-#ifdef BSA_THREAD_DEBUG
-	printf("Stopping %s (tid_ %d)\n", getName(), !!tid_);
-#endif
+	DBG("Stopping %s (tid_ %d)\n", getName(), !!tid_);
 	if ( tid_ ) {
 		kill();
 		join();
