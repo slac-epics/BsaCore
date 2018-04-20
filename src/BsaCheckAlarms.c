@@ -3,7 +3,7 @@
 
 /* Borrowed from B. Dalesio's implementation (aiRecord) */
 void
-BsaCheckAlarms(double val, BsaAlarmLevels lvls, BsaStat *status, BsaSevr *severity)
+BSA_CheckAlarms(double val, BsaAlarmLimits lvls, BsaStat *status, BsaSevr *severity)
 {
     double  hyst, lalm;
     double  alev;
