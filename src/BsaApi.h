@@ -143,6 +143,29 @@ BSA_StoreData(
 );
 
 /*
+ * Helper Routine (which replicates EPICS' aiRecord's 'checkAlarms')
+ */
+typedef struct BsaAlarmLevelsStruct {
+	double  lolo, low, high, hihi;
+	double  lalm, hyst;
+	BsaSevr llsv, lsv, hsv , hhsv;
+} BsaAlarmLevelsStruct, *BsaAlarmLevels;
+
+/*
+ * This routine is intended to be fast; if
+ * access to the BsaAlarmLevels needs to be
+ * protected the caller can employ a spinlock
+ * or mutex.
+ * NOTE: 'laml' is modified by this routine.
+ *       'status' and 'severity' are updated
+ *       (i.e., they already must have valid 
+ *        content since the severity is only
+ *        increased by this routine). 
+ */
+void
+BsaCheckAlarms(double val, BsaAlarmLevels levels, BsaStat *status, BsaSevr *severity);
+
+/*
  * Data Sink API;
  *
  * Simple first version -- assumes *external* history buffers.

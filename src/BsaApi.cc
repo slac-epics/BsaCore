@@ -5,6 +5,8 @@
 #include <pthread.h>
 #include <string.h>
 
+#include <alarm.h>
+
 typedef BsaAlias::shared_ptr<BsaCoreFactory> BsaConfigPtr;
 
 static BsaConfigPtr  theConfig_;
