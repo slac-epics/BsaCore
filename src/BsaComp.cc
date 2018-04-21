@@ -10,8 +10,9 @@ BsaComp::BsaComp(ResPtr newBuf)
 void
 BsaComp::resetAvg(ResPtr newBuf)
 {
-	if ( current_->count > 1 ) {
-		current_->rms = ::sqrt( current_->rms/(double)current_->count );
+	if ( current_->count >= 1 ) {
+		// this yields NaN if count==1 (as expected since 0/0)
+		current_->rms = ::sqrt( current_->rms/(double)(current_->count - 1) );
 	} else if ( current_->count == 0 ) {
 		current_->avg = 0./0.;
 		current_->rms = 0./0.;
