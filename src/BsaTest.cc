@@ -15,6 +15,8 @@
 
 #define EDEF_MAX 8
 
+typedef unsigned long long dull;
+
 class  PatternTestGen;
 
 static PatternTestGen *theGen();
@@ -350,13 +352,13 @@ for ( res = 0; res < numResults; res++ ) {
 #endif
 
 	if ( results[res].count + results[res].missed != edef->navg() ) {
-		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %lu\n", edef->id(), v, results[res].count, results[res].missed, edef->navg());
+		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %llu\n", edef->id(), (dull)v, results[res].count, results[res].missed, (dull)edef->navg());
 		throw std::runtime_error("Test FAILED -- count + missed != navg");
 	}
 
 	if ( strcmp( BSA_GetChannelId( ch ), "NODAT" ) ) {
 		if  ( results[res].count != edef->navg() ) {
-		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %lu\n", edef->id(), v, results[res].count, results[res].missed, edef->navg());
+		printf("EDEF: %u PID: %llu, count %lu, missed %lu, navg %llu\n", edef->id(), (dull)v, results[res].count, results[res].missed, (dull)edef->navg());
 			throw std::runtime_error("Test FAILED -- count != Navg");
 		}
 	} else {
