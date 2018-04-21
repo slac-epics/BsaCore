@@ -1,8 +1,17 @@
 #include <BsaApi.h>
 #include <alarm.h>
+#include <BsaConst.h>
+
+const BsaSevr  BsaConst::SEVR_OK      =  NO_ALARM;
+const BsaSevr  BsaConst::SEVR_MIN     =  MINOR_ALARM;
+const BsaSevr  BsaConst::SEVR_MAJ     =  MAJOR_ALARM;
+const BsaSevr  BsaConst::SEVR_INV     =  INVALID_ALARM;
+
+const BsaStat  BsaConst::STAT_UDF     =  UDF_ALARM;
+
 
 /* Borrowed from B. Dalesio's implementation (aiRecord) */
-void
+extern "C" void
 BSA_CheckAlarms(double val, BsaAlarmLimits lvls, BsaStat *status, BsaSevr *severity)
 {
     double  hyst, lalm;

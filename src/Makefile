@@ -40,7 +40,7 @@ BsaCore_SRCS += BsaApi.cc
 BsaCore_SRCS += BsaPosixClock.cc
 BsaCore_SRCS += BsaCoreFactory.cc
 BsaCore_SRCS += drvBsaCore.c
-BsaCore_SRCS += BsaCheckAlarms.c
+BsaCore_SRCS += BsaEpicsAlarms.cc
 
 BsaTest_SRCS += BsaTest.cc
 

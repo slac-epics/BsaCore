@@ -87,12 +87,6 @@ public:
 };
 
 class BsaChannelImpl : public FinalizePopCallback {
-public:
-	static const BsaSevr  SEVR_OK      =  0;
-	static const BsaSevr  SEVR_MIN     =  1;
-	static const BsaSevr  SEVR_MAJ     =  2;
-	static const BsaSevr  SEVR_INV     =  3;
-
 private:
 	RingBufferSync<BsaResultPtr>               *outBuf_;
 

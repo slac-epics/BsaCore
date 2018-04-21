@@ -1,4 +1,5 @@
 #include <BsaChannel.h>
+#include <BsaConst.h>
 #include <BsaDebug.h>
 #include <stdexcept>
 #include <math.h>
@@ -188,11 +189,11 @@ BsaSlot &slot( slots_[edef] );
 		if ( item ) {
 			DBG("BsaChannelImpl::process (edef %d, chid %d) -- ACTIVE (adding data; %g)\n", edef, chid_, item->val);
 			if ( pattern->edefMinorMask & msk ) {
-				edefSevr = SEVR_MIN;
+				edefSevr = BsaConst::SEVR_MIN;
 			} else if ( pattern->edefMajorMask & msk ) {
-				edefSevr = SEVR_MAJ;
+				edefSevr = BsaConst::SEVR_MAJ;
 			} else {
-				edefSevr = SEVR_INV;
+				edefSevr = BsaConst::SEVR_INV;
 			}
 
 			slot.comp_.addData( item->val, item->timeStamp, pattern->pulseId, edefSevr, item->sevr, item->stat );
