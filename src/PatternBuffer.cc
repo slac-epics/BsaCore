@@ -126,7 +126,7 @@ PatternIdx  t = tail();
 			anyMask &= ~m;
 		}
 	}
-	
+
 }
 
 void
@@ -141,7 +141,7 @@ uint64_t    m;
 
 	while ( ! frontUnused() ) {
 		DBG("finalizePop -- waiting\n");
-		frontUnused_.wait( *lp ); 
+		frontUnused_.wait( *lp );
 	}
 
 std::vector<FinalizePopCallback*>::iterator it;

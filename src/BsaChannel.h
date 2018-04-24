@@ -79,7 +79,7 @@ public:
 	BsaResultPtr              work_;
 	unsigned                  currentRes_;
 	BsaComp                   comp_;
-	
+
 	SinkVec                   callbacks_;
 	unsigned                  maxResults_;
 

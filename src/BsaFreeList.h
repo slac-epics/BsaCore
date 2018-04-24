@@ -129,9 +129,9 @@ public:
 	printStats(FILE *f = stdout)
 	{
 		fprintf(f,"BsaFreeList<%lu>: max #blocks %lu, tot #blocks %lu, freelist #blocks %lu\n",
-			(unsigned long)BLKSZ, 
-			(unsigned long)maxBlks_, 
-			(unsigned long)numBlks_, 
+			(unsigned long)BLKSZ,
+			(unsigned long)maxBlks_,
+			(unsigned long)numBlks_,
 			(unsigned long)lstBlks_
 		);
 	}
@@ -203,7 +203,7 @@ struct BsaPoolAllocator {
 	{
 		return SP( BsaAlias::allocate_shared<T>( *this, a0, a1, a2 ) );
 	}
-		
+
 };
 
 #endif

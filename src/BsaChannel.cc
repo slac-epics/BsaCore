@@ -427,7 +427,7 @@ bool        stored = false;
 
 			while ( prevPattern != pattern ) {
 				DBG("processInput(chid %d) -- edef %d catching up (prev_pattern %llu, pattern %llu)\n",
-				    chid_,                    
+				    chid_,
 				    i,
 				    (unsigned long long)prevPattern->pulseId,
 				    (unsigned long long)pattern->pulseId);
@@ -554,7 +554,7 @@ BsaSlot::SinkVec::iterator it;
 		fprintf(stderr,"Sink Not Connected (channel %s, edef %d)\n", getName(), edef);
 		return -1;
 	}
-	
+
 	if ( slots_[edef].callbacks_.size() == 0 ) {
 		slots_[edef].maxResults_ = BSA_RESULTS_MAX;
 		inUseMask_              &= ~m;

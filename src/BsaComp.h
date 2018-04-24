@@ -32,7 +32,7 @@ public:
 	BsaTimeStamp  getTimeStamp()     const;
 
 	unsigned long getMissing()       const;
- 
+
 	BsaSevr       getMaxSevr()       const;
 	BsaStat       getMaxSevrStat()   const;
 };

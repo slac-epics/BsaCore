@@ -25,11 +25,11 @@ extern "C" {
  *                                          [Data Sink ]
  *                                            ^
  *                                            | [Data Sink ]
- *                                            |   ^       
+ *                                            |   ^
  *                             Data Sink API  |   | [Data Sink ]
  *                                            |   |   ^
  *                                            |   |   |
- *                                            v   v   v   
+ *                                            v   v   v
  *               -------------              ------------
  *              | Data Source | <--------> |            |
  *              | (Internal   |Data SRC API|  BSA Core  |
@@ -130,7 +130,7 @@ BSA_GetChannelId(
  * Data Source API; every time a data source has produced a
  * new item it can be stored in BSA with this call. Thus, a
  * low-level driver may store data w/o using any EPICS.
- * 
+ *
  * Returns: status (0 == OK)
  */
 int
@@ -158,9 +158,9 @@ typedef struct BsaAlarmLimitsStruct {
  * or mutex.
  * NOTE: 'laml' is modified by this routine.
  *       'status' and 'severity' are updated
- *       (i.e., they already must have valid 
+ *       (i.e., they already must have valid
  *        content since the severity is only
- *        increased by this routine). 
+ *        increased by this routine).
  */
 void
 BSA_CheckAlarms(double val, BsaAlarmLimits levels, BsaStat *status, BsaSevr *severity);
@@ -266,7 +266,7 @@ typedef const struct BsaSimpleDataSinkStruct *BsaSimpleDataSink;
 int
 BSA_AddSimpleSink(
 	BsaChannel        bsaChannel,
-	BsaEdef           edefIndex,	
+	BsaEdef           edefIndex,
 	BsaSimpleDataSink sink,
 	void             *closure,
 	unsigned          maxResults
@@ -281,7 +281,7 @@ BSA_AddSimpleSink(
 int
 BSA_DelSimpleSink(
 	BsaChannel        bsaChannel,
-	BsaEdef           edefIndex,	
+	BsaEdef           edefIndex,
 	BsaSimpleDataSink sink,
 	void             *closure
 );

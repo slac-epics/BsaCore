@@ -31,7 +31,7 @@ protected:
 	void notifyNotFull()
 	{
 		not_full_.notify_one();
-	}	
+	}
 
 	void notifyMinFilled()
 	{
@@ -228,7 +228,7 @@ public:
 	{
 	RingBufferSync<T,ELT> *thebuf = (RingBufferSync<T,ELT>*)arg;
 
-		thebuf->setTimeout( BsaAlias::Clock::now() + thebuf->period_ ); 
+		thebuf->setTimeout( BsaAlias::Clock::now() + thebuf->period_ );
 		while ( 1 ) {
 			thebuf->process();
 		}

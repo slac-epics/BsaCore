@@ -232,7 +232,7 @@ int     attempts;
 			if ( (err = pthread_attr_setschedparam( attr.getp(), &param )) ) {
 				throw std::runtime_error( std::string("pthread_attr_setschedparam(prio) failed: ") + std::string(::strerror(err)) );
 			}
-			if ( (err = pthread_attr_setinheritsched( attr.getp(), PTHREAD_EXPLICIT_SCHED)) ) { 
+			if ( (err = pthread_attr_setinheritsched( attr.getp(), PTHREAD_EXPLICIT_SCHED)) ) {
 				throw std::runtime_error( std::string("pthread_attr_setinheritsched failed: ") + std::string(::strerror(err)) );
 			}
 		}

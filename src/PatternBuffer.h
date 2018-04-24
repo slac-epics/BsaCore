@@ -83,7 +83,7 @@ private:
     typedef BsaAlias::shared_ptr< IndexBuf > IndexBufPtr;
 
 	std::vector<IndexBufPtr>           indexBufs_;
-	std::vector<FinalizePopCallback*>  finalizeCallbacks_;              
+	std::vector<FinalizePopCallback*>  finalizeCallbacks_;
 
 	CondVar                            frontUnused_;
 

@@ -115,7 +115,7 @@ BSA_StoreData(
 extern "C" int
 BSA_AddSimpleSink(
 	BsaChannel        bsaChannel,
-	BsaEdef           edefIndex,	
+	BsaEdef           edefIndex,
 	BsaSimpleDataSink sink,
 	void             *closure,
 	unsigned          maxResults
@@ -127,7 +127,7 @@ BSA_AddSimpleSink(
 extern "C" int
 BSA_DelSimpleSink(
 	BsaChannel        bsaChannel,
-	BsaEdef           edefIndex,	
+	BsaEdef           edefIndex,
 	BsaSimpleDataSink sink,
 	void             *closure
 )

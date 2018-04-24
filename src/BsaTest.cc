@@ -246,7 +246,7 @@ double           v  = 0.0;
 		epicsTimeStamp now = me->getCurrentTime();
 		v = now.nsec;
 		if ( BSA_StoreData(ch, now, v, 0, 0) ) {
-			printf("Store data FAILED (pid %llu)\n", (unsigned long long) me->pattern_.pulseId);	
+			printf("Store data FAILED (pid %llu)\n", (unsigned long long) me->pattern_.pulseId);
 		}
 #ifdef VERBOSE
 		ts.tv_nsec = 100*MS;

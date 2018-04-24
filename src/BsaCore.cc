@@ -154,7 +154,7 @@ BsaChannel found = findChannel( name );
 	}
 	return found;
 }
-	
+
 void
 BsaCore::pushTimingData(const BsaTimingData *pattern)
 {
