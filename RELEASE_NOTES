@@ -1,0 +1,5 @@
+R1.3.3:
+	Added 'checkAlarm' helper routine which mimicks EPICS' behavior.
+    Provide square root of sample variance as RMS.
+    Set severity/status to invalid if # of averaged values has zero
+    count.
