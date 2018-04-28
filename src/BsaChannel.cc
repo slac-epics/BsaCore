@@ -64,6 +64,7 @@ unsigned edef;
 	deferredCnt_          = 0;
 	timedoutPatternDrops_ = 0;
 	itemsStored_          = 0;
+	clockSwitchOvers_     = 0;
 
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
@@ -255,6 +256,7 @@ BsaChannelImpl::dump(FILE *f)
 	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
 	fprintf(f,"     # items dropped because of 'pattern timeout': %lu\n", timedoutPatternDrops_ );
 	fprintf(f,"     # items dropped because out of order        : %lu\n", outOfOrderItems_      );
+	fprintf(f,"     # clock switchovers into the past detected  : %lu\n", clockSwitchOvers_     );
 	fprintf(f,"     # timeout ticks                             : %lu\n", numTimeouts_          );
 	fprintf(f,"     # results flushed by timeouts               : %lu\n", numTimeoutFlushes_    );
 	fprintf(f,"     # timeouts with no progress                 : %lu\n", noProgressTimeouts_   );
@@ -374,8 +376,18 @@ bool        stored = false;
 #endif
 
 		if ( pitem->timeStamp <= lastTs_ ) {
-			++outOfOrderItems_;
-			return;
+			if ( BsaTimeStamp::nsDiff( lastTs_, pitem->timeStamp ) > CLOCK_REBASE_LIMIT ) {
+				/* If the 'last' time is too far into the the future then
+				 * most likely some sort of clock switchover has happened.
+				 * If the new source is e.g., a TPGMini then we'd not live
+				 * the day when it finally would catch up.
+				 * Just force the 'lastTs_' back into the past...
+				 */
+				clockSwitchOvers_++;
+			} else {
+				++outOfOrderItems_;
+				return;
+			}
 		}
 
 		lastTs_ = pitem->timeStamp;

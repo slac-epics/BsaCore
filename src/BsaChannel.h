@@ -105,6 +105,9 @@ private:
 	unsigned long                               deferredCnt_;
 	unsigned long                               timedoutPatternDrops_;
 	unsigned long                               itemsStored_;
+	unsigned long                               clockSwitchOvers_;
+
+	static const uint64_t                       CLOCK_REBASE_LIMIT = 2ULL*60ULL*1000ULL*1000ULL*1000ULL;
 
 	typedef BsaAlias::Guard                     Lock;
 	BsaAlias::mutex                             mtx_;
