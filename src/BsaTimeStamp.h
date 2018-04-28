@@ -75,7 +75,7 @@ public:
 		return BsaTimeStamp(rval, true);
 	}
 
-	uint64_t nsDiff(const BsaTimeStamp &a, const BsaTimeStamp &b)
+	static uint64_t nsDiff(const BsaTimeStamp &a, const BsaTimeStamp &b)
 	{
 	uint64_t d = a.ts_ - b.ts_;
 		if ( (d & (ONE-1)) >= SEC ) {
