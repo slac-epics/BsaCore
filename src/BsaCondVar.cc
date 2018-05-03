@@ -13,9 +13,11 @@ int err;
 	if ( (err = pthread_condattr_init( &a_ )) ) {
 		throw std::runtime_error( std::string("pthread_condattr_init failed: ") + std::string(::strerror(err)) );
 	}
+#if ! defined(HAS_NO_CONDATTR_SETCLOCK)
 	if ( (err = pthread_condattr_setclock( &a_, BsaPosixClock::getclock() )) ) {
 		throw std::runtime_error( std::string("pthread_condattr_setclock failed: ") + std::string(::strerror(err)) );
 	}
+#endif
 }
 
 BsaCondVar::Attr::~Attr()

@@ -8,6 +8,16 @@
 #include <time.h>
 #include <stdint.h>
 
+#ifdef __rtems__
+#	include <rtems.h>
+#	if !defined(__RTEMS_MAJOR__)
+#		error "Unable to determine RTEMS version"
+#	endif
+#	if (__RTEMS_MAJOR__ < 4) || (__RTEMS_MAJOR__ == 4 && __RTEMS_MINOR__ <= 11)
+#	   define HAS_NO_CONDATTR_SETCLOCK
+#	endif
+#endif
+
 struct BsaPosixTime : public timespec {
 public:
 	BsaPosixTime();

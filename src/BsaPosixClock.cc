@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
+
 BsaPosixTime::BsaPosixTime()
 {
 }
@@ -54,7 +55,14 @@ namespace BsaAlias {
 clockid_t
 BsaPosixClock::getclock()
 {
+#if defined(HAS_NO_CONDATTR_SETCLOCK)
+		/* Older RTEMS doesn't have pthread_condattr_setclock()
+         * and uses CLOCK_REALTIME for condition variables.
+         */
+		return CLOCK_REALTIME;
+#else
 		return CLOCK_MONOTONIC;
+#endif
 }
 
 BsaPosixTime

@@ -21,8 +21,8 @@ USR_CPPFLAGS += -DUSE_PTHREADS=1
 # Build an IOC support library
 LIBRARY_IOC += BsaCore
 
-PROD_IOC += BsaTest
-PROD_IOC += SyncBufTest
+PROD_IOC_Linux += BsaTest
+PROD_IOC_Linux += SyncBufTest
 
 INC += BsaApi.h
 

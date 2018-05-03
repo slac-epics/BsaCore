@@ -6,6 +6,7 @@
 #include <BsaThread.h>
 #include <BsaChannel.h>
 #include <RingBufferSync.h>
+#include <stdio.h>
 
 class BsaCore;
 
@@ -119,7 +120,7 @@ public:
 	processOutput(BsaResultPtr *);
 
 	void
-	dumpChannelInfo(FILE *f = ::stdout);
+	dumpChannelInfo(FILE *f = stdout);
 
 	void
 	inputTimeout(BsaInpBuf *inpBuf, epicsTimeStamp *lastTimeout);

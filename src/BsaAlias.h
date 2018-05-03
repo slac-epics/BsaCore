@@ -48,7 +48,7 @@ namespace BsaAlias {
 	typedef BsaPosixTime       Period;
 	typedef BsaPosixClock      Clock;
 
-	Time                       nanoseconds(uint64_t);
+	Time                       nanoseconds(::uint64_t);
 #endif
 };
 

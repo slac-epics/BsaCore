@@ -10,6 +10,7 @@
 #include <PatternBuffer.h>
 #include <BsaFreeList.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define BSA_RESULTS_MAX 20
 
@@ -147,7 +148,7 @@ public:
 	timeout(PatternBuffer *pbuf, epicsTimeStamp *lastTimeout);
 
 	void
-	dump(FILE *f = ::stdout);
+	dump(FILE *f = stdout);
 
 	const char *
 	getName() const;

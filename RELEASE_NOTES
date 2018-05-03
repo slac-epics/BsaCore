@@ -1,3 +1,5 @@
+    Minor tweaks to get to build under RTEMS 4.9. Condition variables
+    cannot use CLOCK_MONOTONIC but use CLOCK_REALTIME on that system.
 R1.3.3:
 	Added 'checkAlarm' helper routine which mimicks EPICS' behavior.
     Provide square root of sample variance as RMS.
