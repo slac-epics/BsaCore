@@ -383,7 +383,7 @@ for ( res = 0; res < numResults; res++ ) {
 			rms += dif*dif;
 			v = v - edef->period();
 		}
-		rms = ::sqrt(rms/(double)i);
+		rms = ::sqrt(rms/(double)(i-1));
 
 		if ( abs(avg - results[res].avg) > 1.0E-10 ) {
 			throw std::runtime_error("Test FAILED -- AVG mismatch");
@@ -496,4 +496,6 @@ unsigned i;
 	mcheck_check_all();
 
 	printf("Leaving after checks\n");
+
+	printf("Test PASSED\n");
 }
