@@ -205,7 +205,8 @@ BsaSlot &slot( slots_[edef] );
 		dirtyMask_ |= msk;
 	}
 
-	bool avgDone = pattern->edefAvgDoneMask & msk;
+	// Ignore 'avgDone' if there have not been any active
+	bool avgDone = (pattern->edefAvgDoneMask & msk) && slot.comp_.getActiveCount() > 0;
 	bool update  = (pattern->edefUpdateMask | pattern->edefAllDoneMask) & msk;
 
 	if ( avgDone || update ) {

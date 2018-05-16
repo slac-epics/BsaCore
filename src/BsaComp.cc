@@ -3,6 +3,7 @@
 #include <math.h>
 
 BsaComp::BsaComp(ResPtr newBuf)
+: activeCount_ ( 0 )
 {
 	current_        = newBuf;
 	current_->count = 0;
@@ -30,6 +31,7 @@ BsaComp::resetAvg(ResPtr newBuf)
 	current_->sevr       = 0;
 	current_->stat       = 0;
 	current_->missed     = 0;
+	activeCount_         = 0;
 }
 
 void
@@ -37,6 +39,11 @@ BsaComp::copy(ResPtr newBuf)
 {
 	*newBuf  = *current_;
 	current_ = newBuf;
+	// activeCount_ does not have to be updated!
+	// 'copy' is used to 'carry' partial results over
+	// into a new buffer; the activeCount (which we
+	// cannot maintain in the result struct w/o changing
+	// the API) remains the same...
 }
 
 void
@@ -48,6 +55,7 @@ BsaComp::miss(BsaTimeStamp ts, BsaPulseId pid)
 		current_->pulseId   = pid;
 	}
 	current_->missed++;
+	activeCount_++;
 }
 
 unsigned long
@@ -61,6 +69,13 @@ BsaComp::getCount() const
 {
 	return current_->count;
 }
+
+unsigned long
+BsaComp::getActiveCount() const
+{
+	return activeCount_;
+}
+
 
 BsaTimeStamp
 BsaComp::getTimeStamp()   const
@@ -152,4 +167,5 @@ double d1,d2;
 			current_->stat         = stat;
 		}
 	}
+	activeCount_++;
 }

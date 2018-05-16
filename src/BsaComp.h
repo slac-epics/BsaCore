@@ -9,6 +9,7 @@ private:
 	typedef BsaResultStruct *ResPtr;
 
 	ResPtr        current_;
+	unsigned long activeCount_;
 
 public:
 	BsaComp(ResPtr);
@@ -22,6 +23,8 @@ public:
 	void          miss(BsaTimeStamp ts, BsaPulseId pid);
 
 	unsigned long getCount()         const;
+
+	unsigned long getActiveCount()   const;
 
 	BsaResult     getVal()           const;
 
