@@ -22,10 +22,6 @@ public:
 	void          miss(BsaTimeStamp ts, BsaPulseId pid);
 
 	unsigned long getCount()         const;
-	double        getMean()          const;
-	double        getSumSquares()    const;
-	// population variance
-	double        getPopVar()        const;
 
 	BsaResult     getVal()           const;
 
