@@ -9,7 +9,7 @@ typedef RingBufferSync<int> RBS;
 int
 main()
 {
-RBS dut(LDS,(1<<(LDS-1)));
+RBS dut(LDS,0,(1<<(LDS-1)));
 int i;
 int cnt=0;
 
