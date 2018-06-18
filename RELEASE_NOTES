@@ -1,3 +1,8 @@
+    FIX: must verify 'numResults' against 'maxResults' before invoking
+    callbacks - it could be that a sink with reduced 'maxResults' was
+    connected since the results were acquired
+    (and thus numResults > maxResults)
+
     Minor tweaks to get to build under RTEMS 4.9. Condition variables
     cannot use CLOCK_MONOTONIC but use CLOCK_REALTIME on that system.
 R1.3.3:

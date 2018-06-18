@@ -483,6 +483,7 @@ BsaChannelImpl::processOutput(BsaResultPtr *pitem)
 {
 Lock         lg( omtx_ );
 BsaResultPtr buf;
+unsigned     numResults;
 
 	         buf.swap( *pitem );
 
@@ -499,9 +500,15 @@ BsaSlot     &slot( slots_[buf->edef_] );
 		// We do that simply by storing a shared_ptr in the result itself.
 		buf->self_ = buf;
 		buf->refc_.fetch_add(1);
+
+		// this can happen if a new sink with reduced 'maxResults' is connected
+		// but more results are already acquired. Just clip...
+		if ( (numResults = buf->numResults_) > slot.maxResults_ ) {
+			numResults = slot.maxResults_;
+		}
 		for ( it = slot.callbacks_.begin(); it != slot.callbacks_.end(); ++it ) {
 			buf->refc_.fetch_add(1);
-			it->first.OnResult( this, &buf->results_[0], buf->numResults_, it->second );
+			it->first.OnResult( this, &buf->results_[0], numResults, it->second );
 		}
 		buf->release();
 	}
