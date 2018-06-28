@@ -1,3 +1,7 @@
+R1.4.1: 2018-06-28, Kukhee Kim for Till
+    make Till's latest change on igore_zero_active_count branch 
+    to official tag version
+
 Merge from master:
 
     FIX: must verify 'numResults' against 'maxResults' before invoking
