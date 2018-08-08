@@ -67,8 +67,8 @@ BsaThread *me = (BsaThread*)arg;
 }
 
 BsaThread::BsaThread(const char *nam)
-: nam_( nam              ),
-  pri_( DEFAULT_PRIORITY )
+: nam_( nam ),
+  pri_( -1  )
 {
 }
 
@@ -82,6 +82,8 @@ void
 BsaThread::start()
 {
 	DBG("Starting %s\n", getName());
+	if ( pri_ < 0 )
+		pri_ = getDefaultPriority();
 	tid_ = Thread( new BsaThreadWrapper( this ) );
 }
 

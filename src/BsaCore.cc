@@ -93,9 +93,12 @@ bool doNotify;
 	}
 }
 
-BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill)
-: BsaThread( "BsaCore" ),
-  PatternBuffer( pbufLdSz, pbufMinFill )
+BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill, int patternBufPriority, int inputBufPriority, int outputBufPriority)
+: BsaThread      ( "BsaCore" ),
+  PatternBuffer  ( pbufLdSz, pbufMinFill ),
+  patBufPriority_( patternBufPriority    ),
+  inpBufPriority_( inputBufPriority      ),
+  outBufPriority_( outputBufPriority     )
 {
 	inpBufs_.reserve(NUM_INP_BUFS);
 	outBufs_.reserve(NUM_OUT_BUFS);
@@ -139,12 +142,16 @@ BsaChannel found = findChannel( name );
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "IBUF%d", chid);
 			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid ) ) );
+			if ( inpBufPriority_ >= 0 )
+				inpBufs_[chid]->setPriority( inpBufPriority_ );
 			inpBufs_[chid]->start();
 		}
 		if ( (unsigned)chid < NUM_OUT_BUFS ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "OBUF%d", chid);
 			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD, nam, BsaResultPtr() ) ) );
+			if ( outBufPriority_ >= 0 )
+				outBufs_[chid]->setPriority( outBufPriority_ );
 			outBufs_[chid]->start();
 		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();

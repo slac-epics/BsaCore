@@ -60,6 +60,35 @@ BSA_ConfigSetLdPatternBufSz(unsigned val)
 	return 0;
 }
 
+extern "C" int
+BSA_ConfigSetPatternBufPriority(unsigned val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setPatternBufPriority( val );
+	return 0;
+}
+
+extern "C" int
+BSA_ConfigSetInputBufPriority(unsigned val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setInputBufPriority( val );
+	return 0;
+}
+
+extern "C" int
+BSA_ConfigSetOutputBufPriority(unsigned val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setOutputBufPriority( val );
+	return 0;
+}
+
+
+
 extern "C" BsaChannel
 BSA_CreateChannel(
 	const char *id

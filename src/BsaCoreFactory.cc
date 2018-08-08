@@ -1,8 +1,11 @@
 #include <BsaCoreFactory.h>
 
 BsaCoreFactory::BsaCoreFactory()
-: ldBufSz_( DEFAULT_BSA_LD_PATTERNBUF_SZ            ),
-  minfill_( 0                                       )
+: ldBufSz_           ( DEFAULT_BSA_LD_PATTERNBUF_SZ ),
+  minfill_           (  0                           ),
+  patternBufPriority_( -1                           ),
+  inputBufPriority_  ( -1                           ),
+  outputBufPriority_ ( -1                           )
 {
 }
 
@@ -17,6 +20,27 @@ BsaCoreFactory &
 BsaCoreFactory::setMinFill(unsigned val)
 {
 	minfill_ = val;
+	return *this;
+}
+
+BsaCoreFactory &
+BsaCoreFactory::setPatternBufPriority(unsigned val)
+{
+	patternBufPriority_ = val;
+	return *this;
+}
+
+BsaCoreFactory &
+BsaCoreFactory::setInputBufPriority(unsigned val)
+{
+	inputBufPriority_ = val;
+	return *this;
+}
+
+BsaCoreFactory &
+BsaCoreFactory::setOutputBufPriority(unsigned val)
+{
+	outputBufPriority_ = val;
 	return *this;
 }
 

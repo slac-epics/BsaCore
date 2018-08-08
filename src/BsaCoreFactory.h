@@ -13,12 +13,18 @@ public:
 private:
 	unsigned ldBufSz_;
 	unsigned minfill_;
+	int      patternBufPriority_;
+	int      inputBufPriority_;
+	int      outputBufPriority_;
 
 public:
 	BsaCoreFactory();
 
 	BsaCoreFactory & setLdBufSz(unsigned);
 	BsaCoreFactory & setMinFill(unsigned);
+	BsaCoreFactory & setPatternBufPriority(unsigned);
+	BsaCoreFactory & setInputBufPriority(unsigned);
+	BsaCoreFactory & setOutputBufPriority(unsigned);
 
 	BsaCorePtr create();
 };

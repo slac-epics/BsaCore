@@ -310,6 +310,37 @@ BSA_DumpChannelStats(BsaChannel bsaChannel, FILE *f);
 void
 BSA_DumpPatternBuffer(FILE *f);
 
+/*
+ * Configuration or BsaCore parameters.
+ *
+ * NOTE: These parameters can ONLY be set before the
+ *       core is instantiated (= used).
+ */
+int
+BSA_ConfigSetLdPatternBufSz(unsigned val);
+
+/*
+ * Set the (POSIX) priority of the thread that
+ * processes the pattern buffer.
+ */
+int
+BSA_ConfigSetPatternBufPriority(unsigned val);
+
+/*
+ * Set the (POSIX) priority of the thread pool
+ * that processes BSA filtering.
+ */
+int
+BSA_ConfigSetInputBufPriority(unsigned val);
+
+/*
+ * Set the (POSIX) priority of the thread pool
+ * that processes BSA results.
+ */
+int
+BSA_ConfigSetOutputBufPriority(unsigned val);
+
+
 #ifdef __cplusplus
 }
 #endif

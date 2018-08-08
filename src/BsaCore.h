@@ -98,11 +98,15 @@ private:
 
 	epicsTimeStamp                          lastTimeout_;
 
+    int                                     patBufPriority_;
+    int                                     inpBufPriority_;
+    int                                     outBufPriority_;
+
 	BsaCore(const BsaCore &);
 	BsaCore &operator=(const BsaCore&);
 
 public:
-	BsaCore(unsigned pbufLdSz, unsigned pbufMinFill);
+	BsaCore(unsigned pbufLdSz, unsigned pbufMinFill, int patternBufPriority = -1, int inputBufPriority = -1, int outputBufPriority = -1);
 	virtual ~BsaCore();
 	BsaChannel createChannel(const char *name);
 	BsaChannel findChannel(const char *name);
@@ -112,6 +116,14 @@ public:
 
 	virtual
 	void       processItem(BsaPattern*);
+
+	virtual
+	int        getDefaultPriority()
+	{
+		if ( patBufPriority_ >= 0 )
+			return patBufPriority_;
+		return BsaThread::getDefaultPriority();
+	}
 
 	void
 	processInput(BsaDatum *);

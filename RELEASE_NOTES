@@ -1,3 +1,6 @@
+    FEATURE: Added 'configuration' calls that let the user set thread
+    priorities.
+
     FIX: must verify 'numResults' against 'maxResults' before invoking
     callbacks - it could be that a sink with reduced 'maxResults' was
     connected since the results were acquired

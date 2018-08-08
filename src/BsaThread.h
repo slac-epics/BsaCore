@@ -22,6 +22,16 @@ public:
 
 	virtual int  getPriority();
 
+	// The pri_ field is initialized to an invalid priority.
+	// If during 'start' the priority has not been set for
+	// a thread by the user (or a derived class) then it is
+	// set to the return value of 'getDefaultPriority()' (which
+	// can be overridden by a derived class).
+	virtual int  getDefaultPriority()
+	{
+		return DEFAULT_PRIORITY;
+	}
+
 	// return real priority (the call might adjust)
 	virtual int  setPriority(int priority);
 
