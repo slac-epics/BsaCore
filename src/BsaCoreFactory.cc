@@ -1,13 +1,20 @@
 #include <BsaCoreFactory.h>
 
 BsaCoreFactory::BsaCoreFactory()
-: ldBufSz_           ( DEFAULT_BSA_LD_PATTERNBUF_SZ ),
-  minfill_           (  0                           ),
-  patternBufPriority_( -1                           ),
-  inputBufPriority_  ( -1                           ),
-  outputBufPriority_ ( -1                           ),
+: ldBufSz_           ( DEFAULT_BSA_LD_PATTERNBUF_SZ    ),
+  minfill_           (  0                              ),
+  patternBufPriority_( BsaThread::getDefaultPriority() ),
+  inputBufPriority_  ( BsaThread::getDefaultPriority() ),
+  outputBufPriority_ ( BsaThread::getDefaultPriority() ),
   updateTimeout_     ( (double)DEFAULT_BSA_UPDATE_TIMEOUT_MS/1000.0 )
 {
+	if ( inputBufPriority_ > BsaThread::getPriorityMin() ) {
+		inputBufPriority_--;
+		outputBufPriority_--;
+	}
+	if ( outputBufPriority_ > BsaThread::getPriorityMin() ) {
+		outputBufPriority_--;
+	}
 }
 
 BsaCoreFactory &
@@ -25,21 +32,21 @@ BsaCoreFactory::setMinFill(unsigned val)
 }
 
 BsaCoreFactory &
-BsaCoreFactory::setPatternBufPriority(unsigned val)
+BsaCoreFactory::setPatternBufPriority(int val)
 {
 	patternBufPriority_ = val;
 	return *this;
 }
 
 BsaCoreFactory &
-BsaCoreFactory::setInputBufPriority(unsigned val)
+BsaCoreFactory::setInputBufPriority(int val)
 {
 	inputBufPriority_ = val;
 	return *this;
 }
 
 BsaCoreFactory &
-BsaCoreFactory::setOutputBufPriority(unsigned val)
+BsaCoreFactory::setOutputBufPriority(int val)
 {
 	outputBufPriority_ = val;
 	return *this;

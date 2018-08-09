@@ -25,9 +25,9 @@ public:
 
 	BsaCoreFactory & setLdBufSz(unsigned);
 	BsaCoreFactory & setMinFill(unsigned);
-	BsaCoreFactory & setPatternBufPriority(unsigned);
-	BsaCoreFactory & setInputBufPriority(unsigned);
-	BsaCoreFactory & setOutputBufPriority(unsigned);
+	BsaCoreFactory & setPatternBufPriority(int);
+	BsaCoreFactory & setInputBufPriority(int);
+	BsaCoreFactory & setOutputBufPriority(int);
 	BsaCoreFactory & setUpdateTimeoutSecs(double);
 
 	unsigned         getLdBufSz()

@@ -97,13 +97,13 @@ bool doNotify;
 BsaCore::BsaCore(BsaCoreFactory *config)
 : BsaThread       ( "BsaCore" ),
   PatternBuffer   ( config->getLdBufSz(), config->getMinFill() ),
-  patBufPriority_ ( config->getPatternBufPriority()            ),
   inpBufPriority_ ( config->getInputBufPriority()              ),
   outBufPriority_ ( config->getOutputBufPriority()             ),
   updateTimeoutNs_( (config->getUpdateTimeoutSecs() * 1.0E9)   )
 {
 	inpBufs_.reserve(NUM_INP_BUFS);
 	outBufs_.reserve(NUM_OUT_BUFS);
+	setPriority( config->getPatternBufPriority() );
 }
 
 BsaCore::~BsaCore()
@@ -144,16 +144,14 @@ BsaChannel found = findChannel( name );
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "IBUF%d", chid);
 			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid, updateTimeoutNs_ ) ) );
-			if ( inpBufPriority_ >= 0 )
-				inpBufs_[chid]->setPriority( inpBufPriority_ );
+			inpBufs_[chid]->setPriority( inpBufPriority_ );
 			inpBufs_[chid]->start();
 		}
 		if ( (unsigned)chid < NUM_OUT_BUFS ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "OBUF%d", chid);
 			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD, nam, BsaResultPtr() ) ) );
-			if ( outBufPriority_ >= 0 )
-				outBufs_[chid]->setPriority( outBufPriority_ );
+			outBufs_[chid]->setPriority( outBufPriority_ );
 			outBufs_[chid]->start();
 		}
 		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();

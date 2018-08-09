@@ -10,8 +10,6 @@ class BsaThread {
 private:
 	typedef BsaAlias::shared_ptr<BsaThreadWrapper>  Thread;
 
-	static const int             DEFAULT_PRIORITY = 0;
-
 	Thread                       tid_;
 	void                       (*fun_)(void*);
 	std::string                  nam_;
@@ -22,15 +20,9 @@ public:
 
 	virtual int  getPriority();
 
-	// The pri_ field is initialized to an invalid priority.
-	// If during 'start' the priority has not been set for
-	// a thread by the user (or a derived class) then it is
-	// set to the return value of 'getDefaultPriority()' (which
-	// can be overridden by a derived class).
-	virtual int  getDefaultPriority()
-	{
-		return DEFAULT_PRIORITY;
-	}
+	static int   getDefaultPriority();
+	static int   getPriorityMin();
+	static int   getPriorityMax();
 
 	// return real priority (the call might adjust)
 	virtual int  setPriority(int priority);

@@ -325,28 +325,28 @@ int
 BSA_ConfigSetLdPatternBufSz(unsigned val);
 
 /*
- * Set the (POSIX) priority of the thread that
+ * Set the (EPICS) priority of the thread that
  * processes the pattern buffer.
  */
 int
 BSA_ConfigSetPatternBufPriority(unsigned val);
 
 /*
- * Set the (POSIX) priority of the thread pool
+ * Set the (EPICS) priority of the thread pool
  * that processes BSA filtering.
  */
 int
 BSA_ConfigSetInputBufPriority(unsigned val);
 
 /*
- * Set the (POSIX) priority of the thread pool
+ * Set the (EPICS) priority of the thread pool
  * that processes BSA results.
  */
 int
 BSA_ConfigSetOutputBufPriority(unsigned val);
 
 /*
- * Set the (POSIX) priority of the all threads;
+ * Set the (EPICS) priority of the all threads;
  * convenience wrapper which calls all of the
  * above routines.
  */

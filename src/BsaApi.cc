@@ -7,6 +7,10 @@
 #include <BsaDebug.h>
 
 #include <alarm.h>
+#include <sched.h>
+#include <math.h>
+
+static const unsigned epicsPriMax = 99;
 
 typedef BsaAlias::shared_ptr<BsaCoreFactory> BsaConfigPtr;
 
@@ -51,6 +55,19 @@ int    err;
 	return theCore_;
 }
 
+static int epics2PosixPriority(unsigned epicsPri)
+{
+double min = (double)sched_get_priority_min( SCHED_FIFO );
+double max = (double)sched_get_priority_max( SCHED_FIFO );
+
+double pri = (max - min)/(double)epicsPriMax*((double)epicsPri) + min;
+int   ipri = (int)round(pri);
+
+	if ( ipri < min ) return min;
+	if ( ipri > max ) return max;
+	return ipri;
+}
+
 extern "C" int
 BSA_ConfigSetLdPatternBufSz(unsigned val)
 {
@@ -63,38 +80,39 @@ BSA_ConfigSetLdPatternBufSz(unsigned val)
 extern "C" int
 BSA_ConfigSetPatternBufPriority(unsigned val)
 {
-	if ( theCore_ )
+	if ( theCore_ || val > epicsPriMax )
 		return -1;
-	theConfig()->setPatternBufPriority( val );
+	theConfig()->setPatternBufPriority( epics2PosixPriority( val ) );
 	return 0;
 }
 
 extern "C" int
 BSA_ConfigSetInputBufPriority(unsigned val)
 {
-	if ( theCore_ )
+	if ( theCore_ || val > epicsPriMax )
 		return -1;
-	theConfig()->setInputBufPriority( val );
+	theConfig()->setInputBufPriority( epics2PosixPriority( val ) );
 	return 0;
 }
 
 extern "C" int
 BSA_ConfigSetOutputBufPriority(unsigned val)
 {
-	if ( theCore_ )
+	if ( theCore_ || val > epicsPriMax)
 		return -1;
-	theConfig()->setOutputBufPriority( val );
+	theConfig()->setOutputBufPriority( epics2PosixPriority( val ) );
 	return 0;
 }
 
 int
 BSA_ConfigSetAllPriorites(unsigned val)
 {
-	if ( theCore_ )
+	if ( theCore_ || val > epicsPriMax )
 		return -1;
-	theConfig()->setPatternBufPriority( val );
-	theConfig()->setInputBufPriority( val );
-	theConfig()->setOutputBufPriority( val );
+	int ppri = epics2PosixPriority( val );
+	theConfig()->setPatternBufPriority( ppri );
+	theConfig()->setInputBufPriority  ( ppri );
+	theConfig()->setOutputBufPriority ( ppri );
 	return 0;
 }
 

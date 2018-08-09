@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <errno.h>
 #include <BsaDebug.h>
+#include <sched.h>
 
 #define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_THREADS,msg)
 
@@ -67,8 +68,8 @@ BsaThread *me = (BsaThread*)arg;
 }
 
 BsaThread::BsaThread(const char *nam)
-: nam_( nam ),
-  pri_( -1  )
+: nam_( nam                   ),
+  pri_( getDefaultPriority()  )
 {
 }
 
@@ -78,12 +79,41 @@ BsaThread::~BsaThread()
 	stop();
 }
 
+int
+BsaThread::getDefaultPriority()
+{
+#ifdef __linux__
+	return 0;
+#else
+	int    min = getPriorityMin();
+	int    pri = (int) ( ((double)(getPriorityMax() - min))/4.0 ) + min;
+
+	if ( pri < min )
+		pri = min;
+	return pri;
+#endif
+}
+
+int
+BsaThread::getPriorityMin()
+{
+#ifdef __linux__
+	return 0; /* SCHED_OTHER; SCHED_FIFO: 1..99 */
+#else
+	return sched_get_priority_min( SCHED_FIFO );
+#endif
+}
+
+int
+BsaThread::getPriorityMax()
+{
+	return sched_get_priority_max( SCHED_FIFO );
+}
+
 void
 BsaThread::start()
 {
 	DBG("Starting %s\n", getName());
-	if ( pri_ < 0 )
-		pri_ = getDefaultPriority();
 	tid_ = Thread( new BsaThreadWrapper( this ) );
 }
 

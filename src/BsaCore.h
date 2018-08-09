@@ -99,7 +99,6 @@ private:
 
 	epicsTimeStamp                          lastTimeout_;
 
-    int                                     patBufPriority_;
     int                                     inpBufPriority_;
     int                                     outBufPriority_;
 
@@ -119,14 +118,6 @@ public:
 
 	virtual
 	void       processItem(BsaPattern*);
-
-	virtual
-	int        getDefaultPriority()
-	{
-		if ( patBufPriority_ >= 0 )
-			return patBufPriority_;
-		return BsaThread::getDefaultPriority();
-	}
 
 	void
 	processInput(BsaDatum *);
