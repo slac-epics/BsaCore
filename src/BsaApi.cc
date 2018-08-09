@@ -87,6 +87,17 @@ BSA_ConfigSetOutputBufPriority(unsigned val)
 	return 0;
 }
 
+int
+BSA_ConfigSetAllPriorites(unsigned val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setPatternBufPriority( val );
+	theConfig()->setInputBufPriority( val );
+	theConfig()->setOutputBufPriority( val );
+	return 0;
+}
+
 extern "C" int
 BSA_ConfigSetUpdateTimeoutSecs(double val)
 {

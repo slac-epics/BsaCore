@@ -346,6 +346,14 @@ int
 BSA_ConfigSetOutputBufPriority(unsigned val);
 
 /*
+ * Set the (POSIX) priority of the all threads;
+ * convenience wrapper which calls all of the
+ * above routines.
+ */
+int
+BSA_ConfigSetAllPriorites(unsigned val);
+
+/*
  * Set the timeout at which aggregated
  * results are flushed.
  */
