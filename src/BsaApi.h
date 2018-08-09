@@ -316,6 +316,11 @@ BSA_DumpPatternBuffer(FILE *f);
  * NOTE: These parameters can ONLY be set before the
  *       core is instantiated (= used).
  */
+
+/*
+ * Set the depth of the pattern buffer; the 
+ * value given is the log2(depth).
+ */
 int
 BSA_ConfigSetLdPatternBufSz(unsigned val);
 
@@ -340,6 +345,12 @@ BSA_ConfigSetInputBufPriority(unsigned val);
 int
 BSA_ConfigSetOutputBufPriority(unsigned val);
 
+/*
+ * Set the timeout at which aggregated
+ * results are flushed.
+ */
+int
+BSA_ConfigSetUpdateTimeoutSecs(double seconds);
 
 #ifdef __cplusplus
 }

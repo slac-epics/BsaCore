@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 class BsaCore;
+class BsaCoreFactory;
 
 class BsaChannelNotFound {};
 
@@ -49,11 +50,11 @@ private:
 public:
 	static const uint64_t DFLT_PERIOD_NS = 300ULL*1000000ULL;
 
-	BsaInpBuf(BsaCore *pcore, unsigned ldSz, const char *name, unsigned id)
+	BsaInpBuf(BsaCore *pcore, unsigned ldSz, const char *name, unsigned id, uint64_t period = DFLT_PERIOD_NS)
 	: BsaBuf<BsaDatum> ( pcore, ldSz, name ),
 	  id_              ( id                )
 	{
-		setPeriod( BsaAlias::nanoseconds( DFLT_PERIOD_NS ) );
+		setPeriod( BsaAlias::nanoseconds( period ) );
 	}
 
 	unsigned getId()
@@ -102,11 +103,13 @@ private:
     int                                     inpBufPriority_;
     int                                     outBufPriority_;
 
+	uint64_t                                updateTimeoutNs_;
+
 	BsaCore(const BsaCore &);
 	BsaCore &operator=(const BsaCore&);
 
 public:
-	BsaCore(unsigned pbufLdSz, unsigned pbufMinFill, int patternBufPriority = -1, int inputBufPriority = -1, int outputBufPriority = -1);
+	BsaCore(BsaCoreFactory *config);
 	virtual ~BsaCore();
 	BsaChannel createChannel(const char *name);
 	BsaChannel findChannel(const char *name);

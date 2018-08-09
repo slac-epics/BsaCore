@@ -87,7 +87,14 @@ BSA_ConfigSetOutputBufPriority(unsigned val)
 	return 0;
 }
 
-
+extern "C" int
+BSA_ConfigSetUpdateTimeoutSecs(double val)
+{
+	if ( theCore_ )
+		return -1;
+	theConfig()->setUpdateTimeoutSecs( val );
+	return 0;
+}
 
 extern "C" BsaChannel
 BSA_CreateChannel(

@@ -439,8 +439,6 @@ static BsaSimpleDataSinkStruct dutSink = {
 #define EDEF_2 2
 #define EDEF_3 3
 
-extern "C" int BSA_ConfigSetLdPatternBufSz(unsigned);
-
 int
 main()
 {

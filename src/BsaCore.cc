@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <BsaDebug.h>
+#include <BsaCoreFactory.h>
 
 #define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_CORE,msg)
 typedef unsigned long long dull;
@@ -93,12 +94,13 @@ bool doNotify;
 	}
 }
 
-BsaCore::BsaCore(unsigned pbufLdSz, unsigned pbufMinFill, int patternBufPriority, int inputBufPriority, int outputBufPriority)
-: BsaThread      ( "BsaCore" ),
-  PatternBuffer  ( pbufLdSz, pbufMinFill ),
-  patBufPriority_( patternBufPriority    ),
-  inpBufPriority_( inputBufPriority      ),
-  outBufPriority_( outputBufPriority     )
+BsaCore::BsaCore(BsaCoreFactory *config)
+: BsaThread       ( "BsaCore" ),
+  PatternBuffer   ( config->getLdBufSz(), config->getMinFill() ),
+  patBufPriority_ ( config->getPatternBufPriority()            ),
+  inpBufPriority_ ( config->getInputBufPriority()              ),
+  outBufPriority_ ( config->getOutputBufPriority()             ),
+  updateTimeoutNs_( (config->getUpdateTimeoutSecs() * 1.0E9)   )
 {
 	inpBufs_.reserve(NUM_INP_BUFS);
 	outBufs_.reserve(NUM_OUT_BUFS);
@@ -141,7 +143,7 @@ BsaChannel found = findChannel( name );
 		if ( (unsigned)chid < NUM_INP_BUFS ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "IBUF%d", chid);
-			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid ) ) );
+			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid, updateTimeoutNs_ ) ) );
 			if ( inpBufPriority_ >= 0 )
 				inpBufs_[chid]->setPriority( inpBufPriority_ );
 			inpBufs_[chid]->start();
