@@ -99,10 +99,12 @@ BsaCore::BsaCore(BsaCoreFactory *config)
   PatternBuffer   ( config->getLdBufSz(), config->getMinFill() ),
   inpBufPriority_ ( config->getInputBufPriority()              ),
   outBufPriority_ ( config->getOutputBufPriority()             ),
-  updateTimeoutNs_( (config->getUpdateTimeoutSecs() * 1.0E9)   )
+  updateTimeoutNs_( (config->getUpdateTimeoutSecs() * 1.0E9)   ),
+  numInpBufs_     ( config->getNumInpBufs()                    ),
+  numOutBufs_     ( config->getNumOutBufs()                    )
 {
-	inpBufs_.reserve(NUM_INP_BUFS);
-	outBufs_.reserve(NUM_OUT_BUFS);
+	inpBufs_.reserve(numInpBufs_);
+	outBufs_.reserve(numOutBufs_);
 	setPriority( config->getPatternBufPriority() );
 }
 
@@ -140,21 +142,21 @@ BsaCore::createChannel(const char *name)
 BsaChannel found = findChannel( name );
 	if ( ! found ) {
 		BsaChid     chid = channels_.size();
-		if ( (unsigned)chid < NUM_INP_BUFS ) {
+		if ( (unsigned)chid < numInpBufs_ ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "IBUF%d", chid);
 			inpBufs_.push_back( BsaInpBufPtr( new BsaInpBuf ( this, IBUF_SIZE_LD, nam, chid, updateTimeoutNs_ ) ) );
 			inpBufs_[chid]->setPriority( inpBufPriority_ );
 			inpBufs_[chid]->start();
 		}
-		if ( (unsigned)chid < NUM_OUT_BUFS ) {
+		if ( (unsigned)chid < numOutBufs_ ) {
 			char nam[20];
 			::snprintf(nam, sizeof(nam), "OBUF%d", chid);
 			outBufs_.push_back( BsaOutBufPtr( new BsaOutBuf( this, OBUF_SIZE_LD, nam, BsaResultPtr() ) ) );
 			outBufs_[chid]->setPriority( outBufPriority_ );
 			outBufs_[chid]->start();
 		}
-		BsaOutBuf  *obuf = outBufs_[chid % NUM_OUT_BUFS].get();
+		BsaOutBuf  *obuf = outBufs_[chid % numOutBufs_].get();
 		           found = new BsaChannelImpl( name, chid, obuf );
 		channels_.push_back( BsaChannelPtr( found ) );
 		addFinalizePop( found );
@@ -200,7 +202,7 @@ BsaCore::inputTimeout(BsaInpBuf *pbuf, epicsTimeStamp *lastTimeStamp)
 unsigned chid = pbuf->getId();
 	while ( chid < channels_.size() ) {
 		channels_[chid]->timeout( this, lastTimeStamp );
-		chid += NUM_INP_BUFS;
+		chid += numInpBufs_;
 	}
 }
 
@@ -217,7 +219,7 @@ int
 BsaCore::storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat status, BsaSevr severity)
 {
 BsaChid  chid = pchannel->getChid();
-unsigned idx  = chid % NUM_INP_BUFS;
+unsigned idx  = chid % numInpBufs_;
 	// non-blocking store
 	DBG("BsaCore::storeData (chid %d), TSLOW: %x, value: %g\n", chid, ts.nsec, value);
 	return ! inpBufs_[idx]->push_back( BsaDatum( ts, value, status, severity, chid ), false );

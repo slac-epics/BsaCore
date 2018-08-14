@@ -80,8 +80,6 @@ typedef BsaBuf<BsaResultPtr>  BsaOutBuf;
 
 class BsaCore : public BsaThread, public PatternBuffer {
 private:
-	static const unsigned                   NUM_INP_BUFS = 2;
-	static const unsigned                   NUM_OUT_BUFS = 2;
 	static const unsigned                   IBUF_SIZE_LD = 10;
 	static const unsigned                   OBUF_SIZE_LD = 10;
 	typedef BsaAlias::shared_ptr<BsaChannelImpl> BsaChannelPtr;
@@ -103,6 +101,9 @@ private:
     int                                     outBufPriority_;
 
 	uint64_t                                updateTimeoutNs_;
+
+    unsigned                                numInpBufs_;
+    unsigned                                numOutBufs_;
 
 	BsaCore(const BsaCore &);
 	BsaCore &operator=(const BsaCore&);

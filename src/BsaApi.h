@@ -89,8 +89,6 @@ typedef struct BsaChannelImpl *BsaChannel;
  * internal reference count, i.e., all instances returned by
  * BSA_CreateChannel() must eventually be released (BSA_ReleaseChannel)!).
  *
- * Valid Channel IDs are between 0 and the maximum supported by the
- * Timing system.
  */
 BsaChannel
 BSA_CreateChannel(
@@ -339,11 +337,26 @@ int
 BSA_ConfigSetInputBufPriority(unsigned val);
 
 /*
+ * Set the number of threads in the pool that
+ * processes BSA filtering.
+ */
+int
+BSA_ConfigSetInputBufPoolSize(unsigned val);
+
+/*
  * Set the (EPICS) priority of the thread pool
  * that processes BSA results.
  */
 int
 BSA_ConfigSetOutputBufPriority(unsigned val);
+
+/*
+ * Set the number of threads in the pool that
+ * processes BSA results.
+ */
+int
+BSA_ConfigSetOutputBufPoolSize(unsigned val);
+
 
 /*
  * Set the (EPICS) priority of the all threads;

@@ -117,6 +117,25 @@ BSA_ConfigSetAllPriorites(unsigned val)
 }
 
 extern "C" int
+BSA_ConfigSetInputBufPoolSize(unsigned val)
+{
+	if ( theCore_ || val > 100 )
+		return -1;
+	theConfig()->setNumInpBufs( val );
+	return 0;
+}
+
+extern "C" int
+BSA_ConfigSetOutputBufPoolSize(unsigned val)
+{
+	if ( theCore_ || val > 100 )
+		return -1;
+	theConfig()->setNumOutBufs( val );
+	return 0;
+}
+
+
+extern "C" int
 BSA_ConfigSetUpdateTimeoutSecs(double val)
 {
 	if ( theCore_ )
