@@ -1,0 +1,453 @@
+\documentclass[11pt]{article}
+
+\usepackage{subfigure}
+\usepackage[usenames]{color}
+\usepackage{listings}
+\lstset{basicstyle=\scriptsize, formfeed=\pagebreak}
+
+\usepackage{lcls-article}
+
+\lclsdocumenttype{ICD}
+\lclsdocumentnumber{}
+\systemname{}
+
+\newcommand{\bsac}{BsaCore}
+\newcommand{\bsa} {BSA}
+\newcommand{\slac}{SLAC}
+\newcommand{\EDEF}{EDEF}
+\newcommand{\cstl}[1]{{\lstinline+#1+}}
+
+\newcommand{\cod}[1]{{\tt#1}}
+
+\newcommand{\note}[1]{
+	\begin{description}
+		\item[NOTE] #1
+	\end{description}
+}
+
+\newcommand{\example}[1]{
+	\begin{description}
+		\item[EXAMPLE] #1
+	\end{description}
+}
+
+
+\title{LCLS Beam-Synchronous Acquisition Core Software}
+\author{Till Straumann}
+\date{July 10, 2018}
+% \addreviewer{who}{what}
+
+\summary{%
+The \acf{\bsac} software filters time-stamped data based on criteria set forth by
+{\em event definitions} and forwards filtered and decimated data to a back-end/sink
+for further processing. Data acquired by the \bsac facility are synchronous across
+multiple computers.%
+}
+
+\renewcommand{\revnum}{DRAFT-0-1}
+
+\addchangehistory{000}{July 10, 2018}{All}{DRAFT}
+
+\currentrevision{0}
+
+%
+\keywords{\bsa, \bsac}
+
+
+\begin{document}
+\maketitle
+\section{Introduction}
+The \slac{} ``Beam-Synchronous Acquisition'' (\bsa) facility enables users to acquire
+readings across the entire machine in a synchronous fashion for a well-defined (albeit
+limited) number of beam pulses. The set of beam pulses on which data shall be acquired
+is called an ``Event Definition'' or ``{\EDEF}''. Only a small number (the exact value differs
+between LCLS-1 and LCLS-2) of independent \EDEF{}s is available and users have to
+coordinate access to this limited resource. The exact selection criteria (such as
+beam rate, time-slot etc.) for a particular beam-pulse to be included in an \EDEF{} is beyond
+the scope of this document.
+
+For each beam-pulse a bit-mask is broadcast over the timing-system (together with time-stamp
+and other information). Each bit represents one \EDEF{} and communicates whether data acquired
+for the respective beam-pulse shall or shall not be stored in the \bsa{} facility. An \EDEF{} 
+with its correspoinding bit set to `1' is called ``active''. Thus,
+on every beam-pulse data may be stored for zero, one or more active \EDEF{}s. Therefore, the data
+store in \bsa{} may be visualized as a two-dimensional array of buffers with each row
+representing a data source and each column representing an \EDEF. When a new data item
+arrives it is dropped into all the columns that are active within the row corresponding
+to the particular data source.
+
+An additional feature of the \EDEF{}s is that data may be {\em averaged}. In fact, the 
+timing system broadcasts additional bitmasks (along with the ``active'' mask) to support
+averaging as well as hints for how data with abnormal status shall be handled by \bsa.
+
+Once all the data requested by an \EDEF{} are stored in \bsa{} buffers they can be downloaded
+by the user (usually via EPICS).
+
+The \bsac{} software implements the functionality described above and has three
+interfaces:
+\begin{enumerate}
+\item with the {\em timing system} in order to receive the \bsa-related bit-masks as well as
+      the time-stamp.
+\item with the {\em data source} from which \bsa{} receives time-stamped data items.
+\item with one (or more) {\em data sinks} that consume the filtered \bsa{} data.
+\end{enumerate}
+
+The legacy implementation of \bsa{} was based on EPICS record-processing and had stringent
+real-time requirements which were often difficult to meet. This led to data loss and 
+inconsistencies with data sets across multiple systems no longer being synchronous.
+
+The \bsac{} implementation discussed in this document aims at improving the behaviour by
+introducing various levels of buffering that allow for relaxing the real-time requirements
+significantly. Multi-threaded parallelism improves throughput on multi-core CPUs.
+
+\section{Requirements}
+The following list of requirements/design-goals was defined for \bsac:
+\begin{description}
+\item[Modularization] The legacy \bsa{} implementation was tightly coupled with the timing
+   system (which in-turn was tied to the support of a specific hardware). For obvious reasons
+   this monolithic approach is problematic and a new \bsa{} implementation should become an
+   independent module with well-defined interfaces.
+\item[Support for LCLS-i as well as LCLS-ii] The \bsa{} API as well as its implementation should
+   be able to support LCLS-i as well as (slow) LCLS-ii devices and timing.
+\item[Backwards Compatibility] The design of \bsa{} should allow for an easy migration path for
+   existing (LCLS-i) applications. Ideally, it should be possible to port an IOC application 
+   {\em without} making any changes, i.e., it should be sufficient to link against new libraries%
+\footnote{This approach would, however, require a minimal amount of EPICS record-processing in real
+time; with small modifications to the application such record-processing can be avoided.}.
+\item[\bsac{} Software EPICS agnostic] The \bsac{} software should be a stand-alone component and
+   avoid the use of EPICS records.
+\item[Reduce RT-Requirements] The \bsac{} software design should reduce real-time processing
+   requirements as much as possible.
+\item[C-Language API] The \bsac{} APIs shall use the C-language.
+\end{description}
+
+\section{API}
+Three interfaces are defined for the \bsac{}:
+\begin{description}
+\item[Timing System] which notifies the core of the arrival of a new timing pattern (time-stamp and
+     \bsa{}-relevant bit-masks).
+\item[Data Source] which notifies the core of the arrival of a new, {\em time-stamped} data item.
+     The data may be discarded or stored for one or more \EDEF{}s, depending on the flags contained
+     in the pattern with a time-stamp that matches the data time-stamp.
+\item[Data Sink] is notified by \bsac{} by means of a user-defined callback that filtered and averaged
+     \bsa{} data are available for consumption.
+\end{description}
+These APIs shall now be described in more detail.
+
+\subsection{Timing API}
+\bsac{} defines an indirect method of registering a callback function with the timing system.
+The timing system's API defines a callback which is executed on arrival of each fiducial:
+\begin{lstlisting}
+/**
+ * BSA Timing Pattern data
+ */
+typedef struct BsaTimingData
+{
+    TimingPulseId       pulseId;            /**< 64bit pulseId  */
+    epicsTimeStamp      timeStamp;          /**< TimeStamp for this BSA timing data */
+    uint64_t            edefInitMask;       /**< EDEF initialized mask  */
+    uint64_t            edefActiveMask;     /**< EDEF active mask */
+    uint64_t            edefAvgDoneMask;    /**< EDEF average-done mask */
+    uint64_t            edefAllDoneMask;    /**< EDEF all-done mask */
+    uint64_t            edefUpdateMask;     /**< EDEF update mask   */
+    uint64_t            edefMinorMask;      /**< EDEF minor severity mask   */
+    uint64_t            edefMajorMask;      /**< EDEF major severity mask   */
+}   BsaTimingData;
+
+/**
+ * BsaTimingCallbacks get called w/ 2 parameters
+ *   - pUserPvt is any pointer the callback client needs to establish context
+ *   - pNewPattern is a pointer to the new BSA timing data
+ *
+ * Timing services must guarantee the BSA timing pattern data in this structure is all
+ * from the same beam pulse and does not change before the callback returns.
+ */
+typedef void (*BsaTimingCallback)( void * pUserPvt, const BsaTimingData * pNewPattern );
+
+/**
+ * RegisterBsaTimingCallback is called by the BSA client to register a callback function
+ * for new BsaTimingData.
+ *
+ * The pUserPvt pointer can be used to establish context or set to 0 if not needed.
+ *
+ * Timing services must support this RegisterBsaTimingCallback() function and call
+ * the callback function once for each new BsaTimingData to be compliant w/ this
+ * timing BSA API.
+ *
+ * The Timing service may support more than one BSA client, but is allowed to refuse
+ * attempts to register multiple BSA callbacks.
+ *
+ * Each timing service should provide it's timing BSA code using a unique library name
+ * so we can have EPICS IOC's that build applications for multiple timing service types.
+ */
+extern int RegisterBsaTimingCallback( BsaTimingCallback callback, void * pUserPvt );
+\end{lstlisting}
+and \bsac{} provides an implementation of this callback which is not directly exposed, however.
+Instead, the user must connect the callback to the timing system by calling
+\begin{lstlisting}
+/**
+  * Obtain the timing callback function provided by BSA
+  */
+int
+BSA_TimingCallbackRegister ( int (*registrar) (BsaTimingCallback, void *) ) ;
+\end{lstlisting}
+where usually \cod{RegisterBsaTimingCallback} (note that this function is exported by
+the {\em timing system} whereas \cod{BSA\_TimingCallbackRegister} is provided by \bsac())
+is passed as the \cod{registrar} argument:
+\begin{lstlisting}
+#include <bsaApi.h>
+
+...
+status = BSA_TimingCallbackRegister( RegisterBsaTimingCallback );
+...
+\end{lstlisting}
+This way of indirect registration ensures that a valid ``context'' is always
+passed to \cod{RegisterBsaTimingCallback}.
+\subsection{Channels}
+\bsa{}-sources or -sinks are associated with {\em channels}. A \bsa{} channel
+identifies a particular data source that is acquired into \bsa. A channel
+corresponds to a row in the two-dimensional array mentioned in the introduction
+(the columns of this array represent \EDEF{}s). Channels are identified by {\em IDs}
+which are arbitrary, user-defined strings (names). An EPICS {\em PV} name is customarily
+used as an ID.
+
+The following entry points are defined for creating and identifying channels:
+\begin{lstlisting}
+/**
+  * Create or find a BsaChannel. If a channel with the given ID already
+  * exists then a handle for the existing channel is returned. Otherwise
+  * the handle for a newly created channel is returned.
+  */
+BsaChannel BSA_CreateChannel(const char *id);
+
+/**
+  * Look up a BsaChannel. If a channel with the given ID already
+  * exists then a handle for the existing channel is returned.
+  * Otherwise NULL is returned.
+  */
+BsaChannel BSA_FindChannel(const char *id);
+
+/**
+  * Get the ID of a channel.
+  */
+const char *BSA_GetChannelID(BsaChannel channel);
+\end{lstlisting}
+
+\subsection{Data Source API}
+Every time a data source (associated with a \bsa{} channel) produces fresh
+data it must notify the \bsac{} by calling \cod{BSA\_StoreData()}, providing
+a timestamp as well as status information:
+\begin{lstlisting}
+/**
+  * Returns 0 on success, nonzero on error.
+  */
+int
+BSA_StoreData(
+    BsaChannel     bsaChannel,
+    epicsTimeStamp timeStamp,
+    double         value,
+    BsaStat        status,
+    BsaSevr        severity
+);
+\end{lstlisting}
+Note that currently only IEEE double-precision floating point values are supported.
+
+For convenience, \bsac{} exports a routine to determine status and severity based
+on comparing a value to ``alarm limits''. This routine replicates the (unfortunately
+non-public) algorithm used by EPICS' {\em AI-record}:
+\begin{lstlisting}
+typedef struct BsaAlarmLimitsStruct {
+	double  lolo, low, high, hihi;
+	double  lalm, hyst;
+	BsaSevr llsv, lsv, hsv , hhsv;
+} BsaAlarmLimitsStruct, *BsaAlarmLimits;
+
+/**
+  * This routine is intended to be fast; if
+  * access to the BsaAlarmLimits needs to be
+  * protected the caller can employ a spinlock
+  * or mutex.
+  * NOTE: 'laml' is modified by this routine.
+  *       'status' and 'severity' are updated
+  *       (i.e., they already must have valid
+  *        content since the severity is only
+  *        increased by this routine).
+  */
+void
+BSA_CheckAlarms(double val, BsaAlarmLimits levels, BsaStat *status, BsaSevr *severity);
+\end{lstlisting}
+
+\subsection{Data Sink API}
+A \bsac{} {\em sink} consumes averaged and decimated (``filtered'') \bsa{} data.
+These data are aggregated with additional information such as time-stamp, the number
+of averaged readings and status information.
+The user registers a callback table with \bsac{} and is notified when certain
+events occur:
+\begin{itemize}
+\item when a new acquisition is started the \cod{OnInit()} callback is executed
+      and provided a time-stamp which identifies the pulse on which the acquisition
+      starts.
+\item when new results become available the \cod{OnResult()} callback is invoked
+      from the context of a worker thread. Note that under some circumstances
+      multiple results are aggregated and passed to this callback for sake of
+      efficiency.
+\item when an acquisition is terminated abnormally then \cod{OnAbort()} is invoked
+      with additional status information.
+\end{itemize}
+A sink (callback table) is registered with
+\begin{lstlisting}
+/*
+ * Register a sink with a BSA channel for a given EDEF index.
+ *
+ * 'maxResults' specifies how many results may be delivered
+ * to a single call of 'OnResult'.
+ *
+ * Returns: status (0 == OK)
+ */
+int
+BSA_AddSimpleSink(
+    BsaChannel        bsaChannel,
+    BsaEdef           edefIndex,
+    BsaSimpleDataSink sink,
+    void             *closure,
+    unsigned          maxResults
+);
+\end{lstlisting}
+A sink is added for a specific channel and a specific \EDEF{}, i.e.,
+to an individual ``cell'' in the two-dimensional matrix mentioned in the introduction.
+
+Note that multiple sinks can be attached to each such ``cell'', i.e., the same
+channel/\EDEF{} combination may have multiple sinks attached. \bsac{} iterates
+over all the sinks when a relevant events needs to be dispatched.
+
+The \cod{maxResults} argument specifies how many ``results'' \bsac{} {\em may}
+accumulate before dispatching the \cod{OnResults()} callback. This merely
+sets a limit but \bsac{} may actually deliver less than this limit. It is
+thus mandatory that the user check the {\em actual} number of results
+by inspecting the respective argument to the \cod{OnResults()} callback.
+
+Aggregation of results is desirable for efficiency reasons.
+
+If \cod{maxResults} is set to zero then the implementation is free to pick
+a value.
+
+The complete prototypes for the callbacks as well as type definitions of the
+arguments to \cod{BSA\_AddSimpleSink()} can be found in the appendix or the
+current version of the \cod{BsaApi.h} header.
+
+\section{Implementation Notes}
+In this section we discuss some features of \bsac{} which are not reflected
+in the API but are related to the implementation.
+\subsection{Backwards Compatibility and Latency Remarks}
+\label{sec:latency}
+One design goal for \bsac{} was backwards compatibility, i.e., making it easy
+to switch from the legacy, EPICS-record based implementation to \bsac{} without
+changing the upper-layer EPICS-record interface which interacts with the user.
+
+However, since another design goal was relaxing the real-time requirements
+any user application which implicitly or explicitly relies on \bsa{} processing
+in real-time will most likely be impacted by a switch from legacy \bsa{} to
+\bsac{}.
+
+Relaxing the real-time constraints required the introduction of several
+layers of {\em buffering} within \bsac{} which has the consequence that
+the timing at which \bsa{} results are published are more relaxed than
+with the legacy implementation. This relaxed timing is in addition to any
+networking delays that a remote user (EPICS OPI) may observe. In particular,
+there is no guaranteed latency from data being stored into \bsac{} to when
+processed results are published to the sink(s).
+
+E.g., the author has heard of users who are using a PV hosted on the EVG
+to synchronize with termination of \bsa{}. I.e., it was assumed that
+all (distributed!) \bsa{} data (for a particular \EDEF{}) are available
+as soon as the aforementioned EVG PV indicated that the EVG had finished the
+\EDEF{} in question. Obviously, this method relies on real-time 
+processing of \bsa{} on all the IOCs.
+
+A more robust algorithm for synchronizing \bsa{} buffers would
+e.g, monitor the number of elements acquired and synchronize
+the main thread:
+\begin{lstlisting}
+monitor:
+  if ( number_of_elements >= desired ) then
+    // read the actual data
+    ca_get_bsa_channel( this_channel );
+    if ( 0 == atomic_clear_flag( this_channel, &outstanding_mask ) then
+      // last monitor gets the desired number of elements signals
+      signal();
+    end if
+  endif
+
+start_edef_and_wait:
+  atomic_set_flag( all_channels_mask, &outstanding_mask );
+  start_edef();
+  wait_for_signal_or_timeout();
+\end{lstlisting}
+
+\subsection{\bsac{} Configuration and Initialization}
+\bsac{} uses lazy initialization, i.e., the software is initialized
+during the first execution of
+\cod{BSA\_CreateChannel()} or \cod{BSA\_FindChannel()}.
+
+Several internal parameters of the \bsac{} such as thread priorities
+and buffer depths can be configured albeit only prior to initialization.
+The respective calls have the prefix \cod{BSA\_Config} and are listed
+in the \cod{BsaApi.h} header. Note, however, that it is not recommended
+to change default configuration (maybe with exception of the thread
+priorities).
+
+\subsubsection{Sink Timeout}
+A sink with $\cod{maxResults} >1$ may take a long time (if a \bsa{} runs
+at a slow rate) or even forever (if a \bsa{} terminates before filling up
+the last aggregate of results) to update. To prevent this from happening
+\bsac{} periodically flushes all outstanding results and ensures that
+users don't have to wait excessively. This global period can be adjusted
+(\cod{BSA\_ConfigSetUpdateTimeoutSecs()}) but be aware that the default was
+chosen to provide an optimal compromise between user-convenience and efficiency.
+\appendix
+\pagebreak
+\section*{Appendix}
+
+\subsection*{The \bsa{} API Header}
+\label{app:api}
+\lstinputlisting{../../src/BsaApi.h}
+\subsection*{Integration with the EPICS \cod{event} module}
+Porting the legacy \bsa{} (which historically has been part of
+the \cod{event} module) to \bsac{} was possible with minimal
+changes:
+\begin{itemize}
+\item \cod{bsaRecord} was modified to support the \bsa{}-related fields
+      (\cod{VAL}, \cod{RMS}, \cod{PID}, ...) being {\em arrays} of length
+      \cod{NELM}. A \cod{NORD} field was added which communicates the
+      {\em actual} number of elements contained in the arrays (\cod{NELM}
+      specifies the {\em maximum} of supported elements).
+
+      These modifications are fully backwards compatible and the legacy
+      \bsa{} implementation may still be used (\cod{NELM} is set to $1$
+      in this case).
+
+\item A new device-support module for \cod{bsaRecord} was created which
+      implements a \bsac{} sink using the \cod{bsaRecord}'s \cod{NELM}
+      field to define the \cod{maxResults} parameter. Thus, the problematic
+      update rate of the chained \cod{compress} records can be reduced
+      simply by increasing \cod{NELM} which causes the \cod{compress}
+      records to be updated less frequently but with multiple new values
+      at once. EPICS automatically takes care of this without any further
+      ``special'' code. A value of $\cod{NELM} \approx 10$ has proven to
+      reduce CPU load significantly.
+
+      Note that while reducing \cod{NELM} also reduces the delay from data
+      being stored into \bsac{} to results being published this delay cannot
+      be completely eliminated (even with $\cod{NELM} = 1$) due to additional
+      latency caused by internal buffering (see also above).
+
+\item A new device-support module for the \cod{aoRecord} which forwards
+      data into legacy \bsa{}. While \bsac{}-aware IOC applications are
+      recommended to use the \bsa{} API for storing data into \bsac{}
+      (\cod{BSA\_StoreData()}) this device-support module enables transparent
+      porting of (\bsac{}-unaware) applications.
+\end{itemize}
+Using the aforementioned components is possible to switch existing applications
+from legacy \bsa{} to \bsac{} simply by making small changes to the \bsa{}-related
+database templates and linking the \bsac{} library.
+\end{document}
