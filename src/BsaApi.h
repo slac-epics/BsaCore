@@ -9,7 +9,8 @@ extern "C" {
 #endif
 /*
  * Objectives:
- *     - BSA shall be a separate module/library (unbundled from timing, epics, data acq.);
+ *     - BSA shall be a separate module/library (unbundled from timing,
+ *       EPICS, data acq.);
  *     - interfaces to timing, data source, data sink via APIs
  *     - API should work for lcls-1 and (slow) lcls-2 timing
  *     - make migration of legacy lcls-1 BSA easy

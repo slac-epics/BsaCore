@@ -34,6 +34,15 @@
 	\end{description}
 }
 
+\newcounter{figs}
+
+\newcommand{\fig}[3][0]{
+\refstepcounter{figs}
+\hfill\resizebox{#2}{!}{
+        \rotatebox{#1}{\includegraphics{#3}}}\hspace*{\fill}
+%\hfill\resizebox{#2}{!}{
+%        \rotatebox{#1}{\includegraphics{#2}}}\hspace*{\fill}
+}
 
 \title{LCLS Beam-Synchronous Acquisition Core Software}
 \author{Till Straumann}
@@ -86,8 +95,15 @@ averaging as well as hints for how data with abnormal status shall be handled by
 Once all the data requested by an \EDEF{} are stored in \bsa{} buffers they can be downloaded
 by the user (usually via EPICS).
 
+\begin{figure}
+\fig{0.5\textwidth}{fig_blkdiag.eps}
+\label{fig:bdiag}
+\caption{\bsac{} with APIs and surrounding modules.}
+\end{figure}
+
+
 The \bsac{} software implements the functionality described above and has three
-interfaces:
+interfaces (see fig.~\ref{fig:bdiag}):
 \begin{enumerate}
 \item with the {\em timing system} in order to receive the \bsa-related bit-masks as well as
       the time-stamp.
@@ -102,6 +118,11 @@ inconsistencies with data sets across multiple systems no longer being synchrono
 The \bsac{} implementation discussed in this document aims at improving the behaviour by
 introducing various levels of buffering that allow for relaxing the real-time requirements
 significantly. Multi-threaded parallelism improves throughput on multi-core CPUs.
+
+Note that in the context of lcls2 the \bsac{} software discussed here is {\em only} 
+responsible for {\em slow} data sources which can be processed in software. \bsa{} for
+high-performance systems (HPS) which is delegated largely to FPGA firmware is handled
+by a {\em different} software module, not \bsac{}.
 
 \section{Requirements}
 The following list of requirements/design-goals was defined for \bsac:
@@ -125,7 +146,7 @@ time; with small modifications to the application such record-processing can be 
 \end{description}
 
 \section{API}
-Three interfaces are defined for the \bsac{}:
+Three interfaces are defined for the \bsac{} (see fig.~\ref{fig:bdiag}):
 \begin{description}
 \item[Timing System] which notifies the core of the arrival of a new timing pattern (time-stamp and
      \bsa{}-relevant bit-masks).
@@ -352,10 +373,20 @@ any user application which implicitly or explicitly relies on \bsa{} processing
 in real-time will most likely be impacted by a switch from legacy \bsa{} to
 \bsac{}.
 
+\begin{figure}
+\fig{0.5\textwidth}{fig_impl.eps}
+\label{fig:impl}
+\caption{\bsac{} implementation details. Timing patterns and raw data samples
+         are stored in ring-buffers for deferred processing. A thread pool
+         filters and averages raw data and feeds the sink API via output
+         buffers.}
+\end{figure}
+
 Relaxing the real-time constraints required the introduction of several
-layers of {\em buffering} within \bsac{} which has the consequence that
-the timing at which \bsa{} results are published are more relaxed than
-with the legacy implementation. This relaxed timing is in addition to any
+layers of {\em buffering} (see fig.~\ref{fig:impl}) within \bsac{} which
+has the consequence that the timing at which \bsa{} results are published
+are more relaxed than with the legacy implementation.
+This relaxed timing is in addition to any
 networking delays that a remote user (EPICS OPI) may observe. In particular,
 there is no guaranteed latency from data being stored into \bsac{} to when
 processed results are published to the sink(s).

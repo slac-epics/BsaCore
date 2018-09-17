@@ -4,6 +4,7 @@ include $(TOP)/configure/CONFIG
 
 # Directories to build, any order
 DIRS += configure
+DIRS += documentation
 DIRS += src
 
 # The build order is controlled by these dependency rules:
