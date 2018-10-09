@@ -11,7 +11,7 @@ include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD EXTRA GNUMAKE RULES BELOW HERE
 
-BsaCore.pdf: ../BsaCore.tex $(TOP)/src/BsaApi.h fig_blkdiag.eps fig_impl.eps
+BsaCore.pdf: ../BsaCore.tex $(TOP)/src/BsaApi.h $(patsubst ../%,%,$(wildcard ../fig_*.eps))
 	pdflatex $^
 	pdflatex $^
 

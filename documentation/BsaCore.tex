@@ -84,7 +84,7 @@ for the respective beam-pulse shall or shall not be stored in the \bsa{} facilit
 with its correspoinding bit set to `1' is called ``active''. Thus,
 on every beam-pulse data may be stored for zero, one or more active \EDEF{}s. Therefore, the data
 store in \bsa{} may be visualized as a two-dimensional array of buffers with each row
-representing a data source and each column representing an \EDEF. When a new data item
+representing a data source and each column representing an \EDEF{} (fig.~\ref{fig:edefmat}). When a new data item
 arrives it is dropped into all the columns that are active within the row corresponding
 to the particular data source.
 
@@ -100,6 +100,14 @@ by the user (usually via EPICS).
 \label{fig:bdiag}
 \caption{\bsac{} with APIs and surrounding modules.}
 \end{figure}
+
+\begin{figure}
+\fig{0.5\textwidth}{fig_edefmat.eps}
+\label{fig:edefmat}
+\caption{Data-store ``matrix''. Incoming data are ``dropped'' (stored) into the boxes corresponding to active EDEFs $2$ and $4$, respectively.}
+\end{figure}
+
+
 
 
 The \bsac{} software implements the functionality described above and has three
@@ -318,6 +326,7 @@ events occur:
 \item when an acquisition is terminated abnormally then \cod{OnAbort()} is invoked
       with additional status information.
 \end{itemize}
+Fig.~\ref{fig:cbuml} illustrates the flow of execution of the various callbacks.
 A sink (callback table) is registered with
 \begin{lstlisting}
 /*
@@ -358,6 +367,15 @@ a value.
 The complete prototypes for the callbacks as well as type definitions of the
 arguments to \cod{BSA\_AddSimpleSink()} can be found in the appendix or the
 current version of the \cod{BsaApi.h} header.
+
+\begin{figure}
+\fig{0.9\textwidth}{fig_cbuml.eps}
+\label{fig:cbuml}
+\caption{UML sequence diagram showing registration and execution of callbacks.
+         Note that in the BsaCore there are multiple threads of execution;
+         boxes on life-line represent sequential execution from a single thread.         I.e., \cod{OnInit()} is guaranteed to precede (one or more calls of
+         \cod{OnResult()} associated with the same acquisition).}
+\end{figure}
 
 \section{Implementation Notes}
 In this section we discuss some features of \bsac{} which are not reflected
