@@ -15,6 +15,13 @@
 
 #define EDEF_MAX 8
 
+class McheckIni {
+public:
+	McheckIni() { mcheck_pedantic(0); }
+};
+
+static McheckIni flox __attribute__((init_priority(101)));
+
 typedef unsigned long long dull;
 
 class  PatternTestGen;
@@ -459,6 +466,7 @@ unsigned i;
 	chans.push_back( ch );
 	edefs.push_back( EDEF(EDEF_2, 17, 29,  4, 13)  );
 	chans.push_back( ch );
+
 #if 0
 	edefs.push_back( EDEF(EDEF_3, 2300,  3,  1, 4) );
 	chans.push_back( chNoDat );
@@ -496,4 +504,5 @@ unsigned i;
 	printf("Leaving after checks\n");
 
 	printf("Test PASSED\n");
+
 }

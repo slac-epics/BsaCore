@@ -44,7 +44,7 @@ BsaCore_SRCS += BsaEpicsAlarms.cc
 
 BsaTest_SRCS += BsaTest.cc
 
-BsaTest_SYS_LIBS += pthread mcheck
+BsaTest_SYS_LIBS += pthread
 
 BsaTest_LIBS += BsaCore $(EPICS_BASE_IOC_LIBS)
 
