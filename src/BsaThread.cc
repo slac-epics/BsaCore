@@ -8,6 +8,7 @@
 #include <errno.h>
 #include <BsaDebug.h>
 #include <sched.h>
+#include <sys/syscall.h>
 
 #define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_THREADS,msg)
 
@@ -63,6 +64,13 @@ public:
 void * BsaThreadWrapper::thread_fun(void *arg)
 {
 BsaThread *me = (BsaThread*)arg;
+#ifdef DBG
+pid_t      tid;
+
+	tid = syscall(SYS_gettid);
+
+	DBG("Starting %s, TID %lu=%lx\n", me->getName(), (unsigned long)tid, (unsigned long)tid);
+#endif
 	me->run();
 	return 0;
 }
@@ -133,6 +141,8 @@ void
 BsaThread::join()
 {
 int st;
+	if ( ! tid_ )
+		return;
 	pthread_t tid = tid_->native_handle();
 	DBG("Joining %s\n", getName());
 	if ( (st = pthread_join( tid, NULL )) ) {
