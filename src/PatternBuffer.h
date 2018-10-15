@@ -61,9 +61,21 @@ public:
 	friend class PatternBuffer;
 } BsaPattern;
 
-class PatternExpired  {};
-class PatternTooNew   {};
-class PatternNotFound {};
+class PatternExpired  : public std::runtime_error {
+public:
+	PatternExpired()  : runtime_error("PatternExpired")
+	{}
+};
+class PatternTooNew   : public std::runtime_error {
+public:
+	PatternTooNew()   : runtime_error("PatternTooNew")
+	{}
+};
+class PatternNotFound : public std::runtime_error {
+public:
+	PatternNotFound() : runtime_error("PatternNotFound")
+	{}
+};
 
 class PatternBuffer;
 

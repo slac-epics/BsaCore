@@ -10,6 +10,7 @@
 #include <vector>
 #include <math.h>
 #include <pthread.h>
+#include <exception>
 
 #include <mcheck.h>
 
@@ -200,8 +201,14 @@ public:
 
 static ResChecker remaining;
 
-class EdefTooOld {};
-class EdefActive {};
+class EdefTooOld : public std::runtime_error {
+public:
+	EdefTooOld() : runtime_error("EdefTooOld") { }
+};
+class EdefActive : public std::runtime_error {
+public:
+	EdefActive() : runtime_error("EdefActive") { }
+};
 
 epicsTimeStamp
 PatternTestGen::getCurrentTime()
