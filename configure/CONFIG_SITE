@@ -39,8 +39,6 @@ BOOST_VERSION=1.63.0
 BUILDROOT_VERSION=buildroot-2016.11.1
 BOOST_INCLUDE=$(PACKAGE_SITE_TOP)/boost/$(BOOST_VERSION)/$(patsubst linuxRT-%,$(BUILDROOT_VERSION)-$(ARCH_CLASS),$(T_A))/include
 
-BOOST_INCLUDE=/home/till/epics/modules/pack/boost/hack/include
-
 # These allow developers to override the CONFIG_SITE variable
 # settings without having to modify the configure/CONFIG_SITE
 # file itself.
