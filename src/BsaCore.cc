@@ -220,9 +220,13 @@ BsaCore::storeData(BsaChannel pchannel, epicsTimeStamp ts, double value, BsaStat
 {
 BsaChid  chid = pchannel->getChid();
 unsigned idx  = chid % numInpBufs_;
+int      rval;
 	// non-blocking store
 	DBG("BsaCore::storeData (chid %d), TSLOW: %x, value: %g\n", chid, ts.nsec, value);
-	return ! inpBufs_[idx]->push_back( BsaDatum( ts, value, status, severity, chid ), false );
+	rval = ! inpBufs_[idx]->push_back( BsaDatum( ts, value, status, severity, chid ), false );
+	if ( rval )
+		pchannel->inpBufferDrops();
+	return rval;
 }
 
 void

@@ -65,6 +65,7 @@ unsigned edef;
 	timedoutPatternDrops_ = 0;
 	itemsStored_          = 0;
 	clockSwitchOvers_     = 0;
+	inpBufferDrops_       = 0;
 
 	slots_.reserve( NUM_EDEF_MAX );
 	for ( edef=0; edef<NUM_EDEF_MAX; edef++ ) {
@@ -256,6 +257,7 @@ BsaChannelImpl::dump(FILE *f)
 	fprintf(f,"     # items dropped because of 'pattern not fnd': %lu\n", patternNotFnd_        );
 	fprintf(f,"     # items dropped because of 'pattern timeout': %lu\n", timedoutPatternDrops_ );
 	fprintf(f,"     # items dropped because out of order        : %lu\n", outOfOrderItems_      );
+	fprintf(f,"     # items dropped because of input-buf overfl.: %lu\n", inpBufferDrops_       );
 	fprintf(f,"     # clock switchovers into the past detected  : %lu\n", clockSwitchOvers_     );
 	fprintf(f,"     # timeout ticks                             : %lu\n", numTimeouts_          );
 	fprintf(f,"     # results flushed by timeouts               : %lu\n", numTimeoutFlushes_    );
@@ -346,7 +348,9 @@ BsaPattern *newPattern = slots_[edef].pattern_;
 		newPattern->dump( f, 2, 0 );
 	}
 
-	pbuf->dump( f );
+	if ( pbuf ) {
+		pbuf->dump( f );
+	}
 #if BSA_TSLOG_LD > 0
 	fprintf(f,"Item Timestamps:\n");
 	for ( unsigned xx = 0; xx < itemTs_.size(); ++xx ) {
@@ -462,8 +466,9 @@ bool        stored = false;
 			stored = true;
 		}
 
-		if ( stored )
+		if ( stored ) {
 			itemsStored_++;
+		}
 
 		pbuf->patternPut( pattern );
 	} catch (PatternTooNew &e) {

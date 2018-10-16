@@ -107,6 +107,7 @@ private:
 	unsigned long                               timedoutPatternDrops_;
 	unsigned long                               itemsStored_;
 	unsigned long                               clockSwitchOvers_;
+	unsigned long                               inpBufferDrops_;
 
 	static const uint64_t                       CLOCK_REBASE_LIMIT = 2ULL*60ULL*1000ULL*1000ULL*1000ULL;
 
@@ -164,6 +165,12 @@ public:
 
 	void
 	debug(FILE *f, PatternBuffer *pbuf, BsaTimeStamp lastTs, unsigned edef, BsaPattern *lstPattern);
+
+	virtual void
+	inpBufferDrops()
+	{
+		inpBufferDrops_++;
+	}
 
 	virtual
 	~BsaChannelImpl();
