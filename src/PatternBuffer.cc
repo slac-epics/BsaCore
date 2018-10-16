@@ -225,12 +225,14 @@ uint64_t anyMask = pat->edefInitMask | pat->edefActiveMask;
 	}
 #else
 uint64_t pid;
+unsigned siz;
 	{
 	Lock lg( getMtx() );
 		pid = back().pulseId;
+		siz = size();
 	}
 	if ( pid + 1 != pat->pulseId ) {
-		fprintf(stderr,"Non-sequential pulse IDs: had %d, new %d\n", pid, pat->pulseId);
+		fprintf(stderr,"Non-sequential pulse IDs: had %d, new %d (current size %d)\n", pid, pat->pulseId, siz);
 	}
 #endif
 
