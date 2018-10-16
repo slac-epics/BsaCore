@@ -317,7 +317,7 @@ BSA_DumpPatternBuffer(FILE *f);
  */
 
 /*
- * Set the depth of the pattern buffer; the 
+ * Set the depth of the pattern buffer; the
  * value given is the log2(depth).
  */
 int

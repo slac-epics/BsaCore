@@ -80,7 +80,7 @@ the scope of this document.
 
 For each beam-pulse a bit-mask is broadcast over the timing-system (together with time-stamp
 and other information). Each bit represents one \EDEF{} and communicates whether data acquired
-for the respective beam-pulse shall or shall not be stored in the \bsa{} facility. An \EDEF{} 
+for the respective beam-pulse shall or shall not be stored in the \bsa{} facility. An \EDEF{}
 with its correspoinding bit set to `1' is called ``active''. Thus,
 on every beam-pulse data may be stored for zero, one or more active \EDEF{}s. Therefore, the data
 store in \bsa{} may be visualized as a two-dimensional array of buffers with each row
@@ -88,7 +88,7 @@ representing a data source and each column representing an \EDEF{} (fig.~\ref{fi
 arrives it is dropped into all the columns that are active within the row corresponding
 to the particular data source.
 
-An additional feature of the \EDEF{}s is that data may be {\em averaged}. In fact, the 
+An additional feature of the \EDEF{}s is that data may be {\em averaged}. In fact, the
 timing system broadcasts additional bitmasks (along with the ``active'' mask) to support
 averaging as well as hints for how data with abnormal status shall be handled by \bsa.
 
@@ -120,14 +120,14 @@ interfaces (see fig.~\ref{fig:bdiag}):
 \end{enumerate}
 
 The legacy implementation of \bsa{} was based on EPICS record-processing and had stringent
-real-time requirements which were often difficult to meet. This led to data loss and 
+real-time requirements which were often difficult to meet. This led to data loss and
 inconsistencies with data sets across multiple systems no longer being synchronous.
 
 The \bsac{} implementation discussed in this document aims at improving the behaviour by
 introducing various levels of buffering that allow for relaxing the real-time requirements
 significantly. Multi-threaded parallelism improves throughput on multi-core CPUs.
 
-Note that in the context of lcls2 the \bsac{} software discussed here is {\em only} 
+Note that in the context of lcls2 the \bsac{} software discussed here is {\em only}
 responsible for {\em slow} data sources which can be processed in software. \bsa{} for
 high-performance systems (HPS) which is delegated largely to FPGA firmware is handled
 by a {\em different} software module, not \bsac{}.
@@ -142,7 +142,7 @@ The following list of requirements/design-goals was defined for \bsac:
 \item[Support for LCLS-i as well as LCLS-ii] The \bsa{} API as well as its implementation should
    be able to support LCLS-i as well as (slow) LCLS-ii devices and timing.
 \item[Backwards Compatibility] The design of \bsa{} should allow for an easy migration path for
-   existing (LCLS-i) applications. Ideally, it should be possible to port an IOC application 
+   existing (LCLS-i) applications. Ideally, it should be possible to port an IOC application
    {\em without} making any changes, i.e., it should be sufficient to link against new libraries%
 \footnote{This approach would, however, require a minimal amount of EPICS record-processing in real
 time; with small modifications to the application such record-processing can be avoided.}.
@@ -413,7 +413,7 @@ E.g., the author has heard of users who are using a PV hosted on the EVG
 to synchronize with termination of \bsa{}. I.e., it was assumed that
 all (distributed!) \bsa{} data (for a particular \EDEF{}) are available
 as soon as the aforementioned EVG PV indicated that the EVG had finished the
-\EDEF{} in question. Obviously, this method relies on real-time 
+\EDEF{} in question. Obviously, this method relies on real-time
 processing of \bsa{} on all the IOCs.
 
 A more robust algorithm for synchronizing \bsa{} buffers would
