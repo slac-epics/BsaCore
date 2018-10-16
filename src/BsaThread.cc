@@ -8,7 +8,9 @@
 #include <errno.h>
 #include <BsaDebug.h>
 #include <sched.h>
+#ifdef __linux__
 #include <sys/syscall.h>
+#endif
 
 #define DBG(msg...) BSA_CORE_DBG(BSA_CORE_DEBUG_THREADS,msg)
 
@@ -64,7 +66,7 @@ public:
 void * BsaThreadWrapper::thread_fun(void *arg)
 {
 BsaThread *me = (BsaThread*)arg;
-#ifdef DBG
+#if defined(DBG) && defined(__linux__)
 pid_t      tid;
 
 	tid = syscall(SYS_gettid);
