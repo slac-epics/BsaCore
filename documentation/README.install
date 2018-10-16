@@ -1,0 +1,5 @@
+# To build the latex documentation source
+# with style sheet from SLAC/TID:
+export TEXINPUTS="/afs/slac/g/lcls/tools/texmf:"
+make
+
