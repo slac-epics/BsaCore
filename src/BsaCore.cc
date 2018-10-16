@@ -243,7 +243,7 @@ BsaChannel ch = findChannel( name );
 		if ( !f ) {
 			f = stdout;
 		}
-		epicsTimeStamp ts;
+		epicsTimeStamp ts = { 0, 0 };
 		ch->debug( f, this, ts, (unsigned)-1, 0 );
 	}
 }
