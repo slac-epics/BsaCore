@@ -236,6 +236,19 @@ BsaCore::processInput(BsaDatum *pitem)
 }
 
 void
+BsaCore::channelDebug(const char *name, FILE *f)
+{
+BsaChannel ch = findChannel( name );
+	if ( ch ) {
+		if ( !f ) {
+			f = stdout;
+		}
+		epicsTimeStamp ts;
+		ch->debug( f, this, ts, (unsigned)-1, 0 );
+	}
+}
+
+void
 BsaCore::processOutput(BsaResultPtr *pitem)
 {
 BsaChid chid = (*pitem)->chid_;

@@ -138,5 +138,8 @@ public:
 	BsaChannel findChannel(BsaChid chid);
 
 	void       pushTimingData(const BsaTimingData *pattern);
+
+	void
+	channelDebug(const char *name, FILE *f);
 };
 #endif

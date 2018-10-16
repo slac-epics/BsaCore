@@ -279,6 +279,12 @@ BSA_DumpChannelStats(
 
 
 extern "C" void
+BSA_ChannelDebug(const char *channelName, FILE *f = stdout)
+{
+	theCore()->channelDebug( channelName, f );
+}
+
+extern "C" void
 BSA_DumpPatternBuffer(FILE *f)
 {
 	if ( ! f ) {

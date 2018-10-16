@@ -333,19 +333,20 @@ static BsaAlias::mutex dbgMtx;
 
 Lock lg( dbgMtx );
 
-BsaPattern *newPattern = slots_[edef].pattern_;
-
-	// should not happen as at least 'pattern' should be found
-	epicsTimeStamp lastTsEpics = lastTs;
-	fprintf(f,"Inconsistency for EDEF %d, channel %p, CHID %d, deferred %lu\n", edef, this, getChid(), deferredCnt_);
-	fprintf(f,"Last Timestamp was %9lu/%9lu\n", (unsigned long)lastTsEpics.secPastEpoch, (unsigned long)lastTsEpics.nsec );
-	fprintf(f,"Old Slot Pattern:\n");
-	if ( lstPattern ) {
-		lstPattern->dump( f, 2, 0 );
-	}
-	fprintf(f,"New Slot Pattern:\n");
-	if ( newPattern ) {
-		newPattern->dump( f, 2, 0 );
+	if ( edef < slots_.size() ) {
+		BsaPattern *newPattern = slots_[edef].pattern_;
+		// should not happen as at least 'pattern' should be found
+		epicsTimeStamp lastTsEpics = lastTs;
+		fprintf(f,"Inconsistency for EDEF %d, channel %p, CHID %d, deferred %lu\n", edef, this, getChid(), deferredCnt_);
+		fprintf(f,"Last Timestamp was %9lu/%9lu\n", (unsigned long)lastTsEpics.secPastEpoch, (unsigned long)lastTsEpics.nsec );
+		fprintf(f,"Old Slot Pattern:\n");
+		if ( lstPattern ) {
+			lstPattern->dump( f, 2, 0 );
+		}
+		fprintf(f,"New Slot Pattern:\n");
+		if ( newPattern ) {
+			newPattern->dump( f, 2, 0 );
+		}
 	}
 
 	if ( pbuf ) {
