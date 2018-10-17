@@ -1,0 +1,28 @@
+----------------------
+How to install BsaCore
+----------------------
+
+To build the latex documentation source
+with style sheet from SLAC/TID:
+
+export TEXINPUTS="/afs/slac/g/lcls/tools/texmf:"
+make
+
+
+--------------------------------------------
+How to integrate BsaCore into an application
+--------------------------------------------
+
+Check up BsaCoreIntegration.README file
+in event module R4.3.8 or later
+
+
+
+--------------------------
+How to test and verify Bsa
+--------------------------
+
+Check up BsaTestScenarios.README file
+in event module R4.3.8 or later
+
+
