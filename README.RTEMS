@@ -1,4 +1,0 @@
-Note: C++ support requires a reasonably up-to-date ssrlApps, e.g.,
-
-4.9.4:   rtems_p2/ssrlApps_p7
-4.10.1:  rtems_p1/ssrlApps_p2
