@@ -1,3 +1,5 @@
+R1.5.0:
+    Back to the master branch
 
     DOCUMENTATION: updated
 
@@ -11,6 +13,12 @@
 
     Minor tweaks to get to build under RTEMS 4.9. Condition variables
     cannot use CLOCK_MONOTONIC but use CLOCK_REALTIME on that system.
+
+
+R1.4.x:
+        Workaround version to solve an extra NaN with the old EVG code
+        R1.4.x are in the workaround branch which name "ignore_zero_active_count" 
+
 R1.3.3:
 	Added 'checkAlarm' helper routine which mimicks EPICS' behavior.
     Provide square root of sample variance as RMS.
