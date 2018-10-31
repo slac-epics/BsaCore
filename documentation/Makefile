@@ -4,7 +4,15 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS BELOW HERE
 
+ifndef TEXINPUTS
+ifneq (,$(wildcard /afs/slac/g/lcls/tools/texmf))
+export TEXINPUTS="/afs/slac/g/lcls/tools/texmf:"
+endif
+endif
+
+ifdef TEXINPUTS
 DOCS+=BsaCore.pdf
+endif
 
 
 include $(TOP)/configure/RULES
