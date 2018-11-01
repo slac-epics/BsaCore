@@ -4,25 +4,20 @@ include $(TOP)/configure/CONFIG
 #----------------------------------------
 #  ADD MACRO DEFINITIONS BELOW HERE
 
-ifndef TEXINPUTS
-ifneq (,$(wildcard /afs/slac/g/lcls/tools/texmf))
-export TEXINPUTS="/afs/slac/g/lcls/tools/texmf:"
-endif
-endif
-
-ifdef TEXINPUTS
-DOCS+=BsaCore.pdf
-endif
-
+DOCS+=../BsaCore.pdf
 
 include $(TOP)/configure/RULES
 #----------------------------------------
 #  ADD EXTRA GNUMAKE RULES BELOW HERE
 
-BsaCore.pdf: ../BsaCore.tex $(TOP)/src/BsaApi.h $(patsubst ../%,%,$(wildcard ../fig_*.eps))
+ifeq ($(WITH_DOCS),YES)
+../BsaCore.pdf: ../BsaCore.tex $(TOP)/src/BsaApi.h $(patsubst ../%,%,$(wildcard ../fig_*.eps))
+	$(RM) $@
 	pdflatex $^
 	pdflatex $^
+	cp BsaCore.pdf ../
+endif
+
 
 fig_%.eps: ../fig_%.eps
 	ln -s $^ $@
-

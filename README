@@ -26,3 +26,15 @@ Check up BsaTestScenarios.README file
 in event module R4.3.8 or later
 
 
+--------------------------------------------------
+How to rebuild the documentation (latex required!)
+--------------------------------------------------
+
+By default, documentation is *NOT* rebuilt (since
+this requires the respective tools). In order to
+do so, define WITH_DOCS=YES on the command line:
+
+  make WITH_DOCS=YES
+
+This will recreate the pdf if any of its
+pre-requisites (figures, .tex source) are newer.
