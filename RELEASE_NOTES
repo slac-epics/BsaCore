@@ -1,6 +1,7 @@
 R1.5.1:
     DOCUMENTATION: do *not* regenerate automatically but maintain
     a copy of the PDF in git (see README).
+    Add RTEMS-mvme3100 target and force tag
 
 R1.5.0:
     Back to the master branch
