@@ -1,3 +1,6 @@
+R1.5.2:
+    build with boost-1.64.0
+
 R1.5.1:
     DOCUMENTATION: do *not* regenerate automatically but maintain
     a copy of the PDF in git (see README).
