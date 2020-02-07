@@ -1,3 +1,6 @@
+R1.5.3:
+    build with buildroot-2019.08
+
 R1.5.2:
     build with boost-1.64.0
 

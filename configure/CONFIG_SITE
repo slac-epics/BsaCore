@@ -36,7 +36,7 @@ CROSS_COMPILER_TARGET_ARCHS = $(filter linux% RTEMS-beatnik RTEMS-mvme3100 RTEMS
 #HOST_OPT = NO
 #CROSS_OPT = NO
 BOOST_VERSION=1.64.0
-BUILDROOT_VERSION=buildroot-2016.11.1
+BUILDROOT_VERSION=buildroot-2019.08
 BOOST_INCLUDE=$(PACKAGE_SITE_TOP)/boost/$(BOOST_VERSION)/$(patsubst linuxRT-%,$(BUILDROOT_VERSION)-$(ARCH_CLASS),$(T_A))/include
 
 # These allow developers to override the CONFIG_SITE variable
