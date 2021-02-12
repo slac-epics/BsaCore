@@ -211,7 +211,7 @@ public:
 	process()
 	{
 		while ( ! wait_until( timeout_ ) ) {
-			timeout();
+			try {  timeout(); } catch (std::exception &e) { /* nothing todo */ }
 			timeout_ += period_;
 		}
 
