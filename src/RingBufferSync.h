@@ -212,7 +212,7 @@ public:
 	{
 		while ( ! wait_until( timeout_ ) ) {
 			try {  timeout(); } catch (std::exception &e) { /* nothing todo */ }
-			timeout_ += period_;
+			timeout_ = BsaAlias::Clock::now() + period_;
 		}
 
 		T &item( RingBuffer<T,ELT>::front() );
