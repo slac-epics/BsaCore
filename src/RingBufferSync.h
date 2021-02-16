@@ -83,7 +83,7 @@ public:
 	RingBufferSync(unsigned ldSz, unsigned minfill = 0)
 	: RingBuffer<T,ELT>( ldSz    ),
 	  minfill_         ( minfill ),
-	  period_          ( BsaAlias::nanoseconds( 10ULL*365ULL*3600ULL*24ULL*1000000000ULL ) ),
+	  period_          ( BsaAlias::nanoseconds( 30ULL*3600ULL*24ULL*1000000000ULL ) ),
 	  timeout_         ( BsaAlias::Clock::now() + period_                                  )
 	{
 		if ( minfill >= (unsigned)(1<<ldSz) ) {
@@ -95,7 +95,7 @@ public:
 	RingBufferSync(unsigned ldSz, const ELT &ini, unsigned minfill = 0)
 	: RingBuffer<T,ELT>( ldSz, ini ),
 	  minfill_         ( minfill   ),
-	  period_          ( BsaAlias::nanoseconds( 10ULL*365ULL*3600ULL*24ULL*1000000000ULL ) ),
+	  period_          ( BsaAlias::nanoseconds( 30ULL*3600ULL*24ULL*1000000000ULL ) ),
 	  timeout_         ( BsaAlias::Clock::now() + period_                                  )
 	{
 		if ( minfill >= (unsigned)(1<<ldSz) ) {
