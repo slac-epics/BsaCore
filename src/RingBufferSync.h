@@ -217,7 +217,7 @@ public:
 
 		T &item( RingBuffer<T,ELT>::front() );
 
-		processItem( &item );
+		try { processItem( &item ); } catch (std::exception &e) { /* nothing todo now, need to study how to recover it */ }
 
 		pop();
 	}
