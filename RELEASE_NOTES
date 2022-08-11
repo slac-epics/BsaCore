@@ -1,3 +1,7 @@
+R1.5.5:
+    the caget reports -nan for NaN entry in BSA buffer,
+    fix to make caget repors nan instead of -nan
+
 R1.5.4:
     add exception handler for the process() in RingBufferSync
 

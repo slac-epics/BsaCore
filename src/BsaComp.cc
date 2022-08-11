@@ -15,8 +15,8 @@ BsaComp::resetAvg(ResPtr newBuf)
 		// this yields NaN if count==1 (as expected since 0/0)
 		current_->rms = ::sqrt( current_->rms/(double)(current_->count - 1) );
 	} else if ( current_->count == 0 ) {
-		current_->avg  = 0./0.;
-		current_->rms  = 0./0.;
+		current_->avg  = NAN;
+		current_->rms  = NAN;
 		current_->sevr = BsaConst::SEVR_INV;
 		current_->stat = BsaConst::STAT_UDF;
 	}
