@@ -1,3 +1,6 @@
+R1.5.6:
+    build against timingApi R0.9
+
 R1.5.5:
     the caget reports -nan for NaN entry in BSA buffer,
     fix to make caget repors nan instead of -nan
