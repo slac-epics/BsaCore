@@ -20,7 +20,7 @@ CHECK_RELEASE = YES
 #   for a subset of the cross-compiled target architectures
 #   that Base is built for.
 ALL_X_ARCHS:=$(CROSS_COMPILER_TARGET_ARCHS)
-CROSS_COMPILER_TARGET_ARCHS = $(filter linux% RTEMS-beatnik RTEMS-mvme3100 RTEMS-pc586,$(ALL_X_ARCHS))
+CROSS_COMPILER_TARGET_ARCHS = $(filter linux% buildroot-% RTEMS-beatnik RTEMS-mvme3100 RTEMS-pc586,$(ALL_X_ARCHS))
 
 # To install files into a location other than $(TOP) define
 #   INSTALL_LOCATION here.
@@ -36,8 +36,7 @@ CROSS_COMPILER_TARGET_ARCHS = $(filter linux% RTEMS-beatnik RTEMS-mvme3100 RTEMS
 #HOST_OPT = NO
 #CROSS_OPT = NO
 BOOST_VERSION=1.64.0
-BUILDROOT_VERSION=buildroot-2019.08
-BOOST_INCLUDE=$(PACKAGE_SITE_TOP)/boost/$(BOOST_VERSION)/$(patsubst linuxRT-%,$(BUILDROOT_VERSION)-$(ARCH_CLASS),$(T_A))/include
+BOOST_INCLUDE=$(PACKAGE_SITE_TOP)/boost/$(BOOST_VERSION)/$(patsubst linuxRT-%,buildroot-%-$(ARCH_CLASS),$(T_A))/include
 
 # These allow developers to override the CONFIG_SITE variable
 # settings without having to modify the configure/CONFIG_SITE
