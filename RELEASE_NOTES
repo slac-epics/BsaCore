@@ -5,7 +5,7 @@ pre-release:
                  - (describe what you've done)
                  - (describe what you've done)
 
-pre-release:
+R1.5.7:       Nov/11/2026
               Marcio Donadio (marcio):
                 - Upgrade to timingApi/R0.11.
                 - Build for all buildroot targets defined in base.
